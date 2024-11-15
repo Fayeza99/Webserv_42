@@ -116,7 +116,7 @@ LocationConfig Parser::parseLocation()
 
 	while (currentToken.type != TokenType::CLOSE_BRACE)
 	{
-		std::cout << "Current Token: " << currentToken.value << std::endl;
+		// std::cout << "Current Token: " << currentToken.value << std::endl;
 
 		if (currentToken.type == TokenType::STRING)
 		{

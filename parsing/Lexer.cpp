@@ -40,7 +40,7 @@ Token Lexer::nextToken()
 		return nextToken();
 	}
 
-	std::cout << c << std::endl;
+	// std::cout << c << std::endl;
 
 	switch (c)
 	{
