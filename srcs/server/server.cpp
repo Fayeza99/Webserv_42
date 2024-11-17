@@ -82,14 +82,15 @@ void Server::run() {
 
 			// Currently providing the following response call the response creation logic here
 
-			const char* response =
-				"HTTP/1.1 200 OK\r\n"
-				"Content-Type: text/plain\r\n"
-				"Content-Length: 13\r\n"
-				"\r\n"
-				"Hello, world!";
+			// const char* response =
+			// 	"HTTP/1.1 200 OK\r\n"
+			// 	"Content-Type: text/plain\r\n"
+			// 	"Content-Length: 13\r\n"
+			// 	"\r\n"
+			// 	"Hello, world!";
 
-			send(clientSocket, response, strlen(response), 0);
+			// send(clientSocket, response, strlen(response), 0);
+			handle_request(buffer, clientSocket);
 		}
 
 		close(clientSocket);

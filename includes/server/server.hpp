@@ -1,6 +1,7 @@
 #pragma once
 #include "../../srcs/parsing/GlobalConfig.hpp"
 #include "utils.hpp"
+#include "Response.hpp"
 #include "../../srcs/parsing/Parser.hpp"
 #include <netinet/in.h>
 #include <sys/socket.h>
