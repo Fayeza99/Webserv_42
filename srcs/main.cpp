@@ -2,8 +2,8 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include "parsing/GlobalConfig.hpp" // Assuming this is the header file for your config classes
-#include "parsing/Parser.hpp"		// Assuming this is the header file where your Parser class is defined
+#include "parsing/GlobalConfig.hpp"
+#include "parsing/Parser.hpp"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
