@@ -1,8 +1,11 @@
 # Compiler
 CXX = c++
 
+# Find all include directories recursively within 'includes/'
+INCLUDE_DIRS = $(shell find includes -type d)
+
 # Compiler Flags
-CXXFLAGS = -Wall -Wextra -Werror -std=c++17 -Iincludes
+CXXFLAGS = -Wall -Wextra -Werror -std=c++17 $(addprefix -I,$(INCLUDE_DIRS))
 
 # Source Files
 SOURCES = $(wildcard srcs/*.cpp srcs/*/*.cpp)
@@ -32,7 +35,7 @@ $(OBJDIR)/%.o: %.cpp
 clean:
 	rm -rf $(OBJDIR)
 
-# Clean target for removing executable with the object files
+# Clean target for removing executable along with object files
 fclean: clean
 	rm -rf $(EXEC)
 
