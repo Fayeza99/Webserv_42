@@ -2,10 +2,11 @@
 
 int main (int argc, char **argv) {
 	if (argc == 2) {
+		Server server;
 		try {
-			readConfigFile(argv[1]);
+			server.configure(argv[1]);
 		} catch (const std::exception &e) {
-			std::cerr << "Opps! Something went wrong!" << std::endl;
+			std::cerr << "Opps! Something went wrong!" << e.what() << std::endl;
 			return 1;
 		}
 	} else {
