@@ -5,6 +5,8 @@ int main (int argc, char **argv) {
 		Server server;
 		try {
 			server.configure(argv[1]);
+			server.setup();
+			server.run();
 		} catch (const std::exception &e) {
 			std::cerr << "Opps! Something went wrong!" << e.what() << std::endl;
 			return 1;
