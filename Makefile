@@ -5,7 +5,7 @@ CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++17
 
 # Source Flags
-SOURCES = main.cpp
+SOURCES = main.cpp Response.cpp
 
 # Object files directory
 OBJDIR = obj
