@@ -31,6 +31,14 @@ $(OBJDIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+<<<<<<< Updated upstream
+=======
+# Create the object directory if it doesn't exist
+$(OBJDIR)/%.o: %.cpp
+	mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+>>>>>>> Stashed changes
 # Clean target for removing object files
 clean:
 	rm -rf $(OBJDIR)
