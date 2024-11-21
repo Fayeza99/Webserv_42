@@ -16,6 +16,21 @@ void Server::configure(const std::string& configFilePath) {
 }
 
 /**
+ * @brief function to set a soket to non-blocking mode
+ *
+ * @param fd file descriptor of the socket
+ */
+void setNonBlocking(int fd) {
+	int flags = fcntl(fd, F_GETFL, 0);
+	if (flags == -1) {
+		throw std::runtime_error("Failed to get socket flags");
+	}
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+		throw std::runtime_error("Failed to set socket to non-blocking");
+	}
+}
+
+/**
  * @brief It sets up the server by:
  * 1. creating a socket
  * 2. Set socket options
@@ -30,6 +45,8 @@ void Server::setup() {
 	if (serverSocket == -1) {
 		throw std::runtime_error("Failed to create socket");
 	}
+
+	setNonBlocking(serverSocket);
 
 	int opt = 1;
 	if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
