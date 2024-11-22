@@ -42,7 +42,7 @@ Parser::Parser(const std::string &input) : lexer(Lexer(input))
 
 void Parser::eat(TokenType type)
 {
-	if (currentToken.type != type)
+	if (currentToken.type != type && type != TokenType::EOF_TOKEN)
 	{
 		std::cerr << "Parsing error at position " << lexer.getPosition() << ": expected token of type "
 				  << static_cast<int>(type) << " (" << tokenTypeToString(type) << ")"
@@ -219,7 +219,7 @@ ServerConfig Parser::parseServer()
 GlobalConfig Parser::parse()
 {
 	GlobalConfig config;
-	while (currentToken.type != TokenType::EOF_TOKEN)
+	while (currentToken.type == TokenType::EOF_TOKEN)
 	{
 		if (currentToken.type == TokenType::SERVER)
 		{
@@ -231,6 +231,7 @@ GlobalConfig Parser::parse()
 			std::cerr << "Error: Unexpected token " << static_cast<int>(currentToken.type) << std::endl;
 			throw std::runtime_error("Parsing error: Unexpected token.");
 		}
+		// std::cout << tokenTypeToString(currentToken.type) << std::endl;
 	}
 	return config;
 }
