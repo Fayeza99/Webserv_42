@@ -1,19 +1,6 @@
 #include "server.hpp"
 
-Server::Server() {}
-
-/**
- * @brief this function calls the readConfigFile and
- * then parses the content of the config file and store
- * it in serverConfig variale
- *
- * @param configFilePath comes from the main argv[1]
- */
-void Server::configure(const std::string& configFilePath) {
-	Parser parser(readConfigFile(configFilePath));
-	// globalConfig = parser.parse();
-	serverConfig =  parser.parseServer();
-}
+Server::Server(const ServerConfig& config) : serverConfig(config) serverSocket(-1), kq(-1) {}
 
 /**
  * @brief function to set a soket to non-blocking mode
@@ -331,6 +318,6 @@ void Server::run() {
 	}
 }
 
-ServerConfig Server::getServerConfig() const {
-	return serverConfig;
+int Server::getServerSocket() const {
+	return serverSocket;
 }

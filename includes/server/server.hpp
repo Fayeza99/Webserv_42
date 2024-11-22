@@ -17,12 +17,11 @@
 #include <iostream>      // For input/output
 class Server {
 	private:
-		GlobalConfig globalConfig;
 		ServerConfig serverConfig;
 		int serverSocket;
 		struct sockaddr_in serverAddr;
-
 		int kq;
+
 
 		void setNonBlocking(int fd);
 		void removeClient(int clientSocket);
@@ -43,10 +42,9 @@ class Server {
 		std::map<int, ClientState> clients;
 
 	public:
-		Server();
-		void configure(const std::string& configFilePath);
+		Server(const ServerConfig& config);
 		void setup();
 		void run();
-		ServerConfig getServerConfig() const;
+		int getServerSocket() const;
 
 };
