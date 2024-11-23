@@ -1,20 +1,21 @@
 #pragma once
-#include "../../srcs/parsing/GlobalConfig.hpp"
+#include "GlobalConfig.hpp"
 #include "utils.hpp"
-#include "../../srcs/parsing/Parser.hpp"
+#include "Parser.hpp"
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
-#include <unistd.h>      // For close()
-#include <fcntl.h>       // For fcntl()
-#include <arpa/inet.h>   // For inet_ntoa()
-#include <netinet/in.h>  // For sockaddr_in
-#include <cstring>       // For memset()
-#include <cerrno>        // For errno
-#include <ctime>         // For time()
-#include <map>           // For std::map
-#include <string>        // For std::string
-#include <iostream>      // For input/output
+#include <unistd.h>
+#include <fcntl.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <cstring>
+#include <cerrno>
+#include <ctime>
+#include <map>
+#include <string>
+#include <iostream>
+
 class Server {
 	private:
 		ServerConfig serverConfig;
@@ -42,7 +43,8 @@ class Server {
 		std::map<int, ClientState> clients;
 
 	public:
-		Server(const ServerConfig& config);
+		Server();
+		void configure(const std::string& configFilePath);
 		void setup();
 		void run();
 		int getServerSocket() const;
