@@ -16,19 +16,23 @@ void	echo_request(RequestParser &req, int fd) {
 // respond to .py request (CGI)
 void	exec_script(RequestParser &req, int fd) {
 	pid_t				pid;
-	const std::string	&uri = req.getUri();
+	const std::string	&uri = "." + req.getUri();
 	std::string			script_name;
 	int					pipe_fd[2];
 
-	if (access(uri.c_str(), X_OK) == -1) {
+	if (FILE *file = fopen(uri.c_str(), "r")) {
+		fclose(file);
+	} else {
+		std::cout << "no access: " << uri << std::endl;
 		send_response(req.getHttpVersion() + " 404 Not Found\r\n\r\n", fd);
 		return ;
 	}
-	if (chdir(("." + uri.substr(0, uri.find_last_of("/"))).c_str()) == -1) {
+	if (chdir((uri.substr(0, uri.find_last_of("/"))).c_str()) == -1) {
+		std::cout << "chdir: " << uri.substr(0, uri.find_last_of("/")) << std::endl;
 		send_response(req.getHttpVersion() + " 404 Not Found\r\n\r\n", fd);
 		return ;
 	}
-	script_name = uri.substr(uri.find_last_of("/"));
+	script_name = uri.substr(uri.find_last_of("/") + 1);
 	if (pipe(pipe_fd) == -1)
 		return ;
 	pid = fork();
@@ -72,7 +76,7 @@ void	respond(RequestParser &req, int client_fd) {
 			send_response(req.getHttpVersion() + " 200 OK\r\n\r\n", client_fd);
 		else if (uri.substr(0, 6) == "/echo/")
 			echo_request(req, client_fd);
-		else if (uri.compare (uri.length() - 3, 3, ".py"))
+		else if (!uri.compare(uri.length() - 3, 3, ".py"))
 			exec_script(req, client_fd);
 	} else
 		send_response(req.getHttpVersion() + " 404 Not Found\r\n\r\n", client_fd);

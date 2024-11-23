@@ -90,7 +90,8 @@ void Server::run() {
 			// 	"Hello, world!";
 
 			// send(clientSocket, response, strlen(response), 0);
-			handle_request(buffer, clientSocket);
+			RequestParser parser(buffer);
+			respond(parser, clientSocket);
 		}
 
 		close(clientSocket);
