@@ -1,6 +1,12 @@
 #include "server.hpp"
 
-Server::Server(const ServerConfig& config) : serverConfig(config) serverSocket(-1), kq(-1) {}
+Server::Server() {}
+
+void Server::configure(const std::string& configFilePath) {
+	Parser parser(readConfigFile(configFilePath));
+	// globalConfig = parser.parse();
+	serverConfig =  parser.parseServer();
+}
 
 /**
  * @brief function to set a soket to non-blocking mode
@@ -178,17 +184,15 @@ void Server::handleRead(int clientSocket) {
 
 		size_t pos = clients[clientSocket].requestBuffer.find("\r\n\r\n");
 		if (pos != std::string::npos) {
-			std::string response =
-				"HTTP/1.1 200 OK\r\n"
-				"Content-Type: text/plain\r\n"
-				"Content-Length: 13\r\n"
-				"\r\n"
-				"Hello, world!";
+			// std::string response =
+				// "HTTP/1.1 200 OK\r\n"
+				// "Content-Type: text/plain\r\n"
+				// "Content-Length: 13\r\n"
+				// "\r\n"
+				// "Hello, world!";
 
-			// RequestParser parser(buffer);
-			// respond(parser, clientSocket);
-
-			clients[clientSocket].responseBuffer = response;
+			RequestParser p(buffer);
+			clients[clientSocket].responseBuffer = response(p);
 
 			registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 		}
@@ -215,8 +219,8 @@ void Server::handleRead(int clientSocket) {
  */
 void Server::handleWrite(int clientSocket) {
 	std::string& response = clients[clientSocket].responseBuffer;
-
 	if (!response.empty()) {
+	std::cout << "RESPONSE:\n" << response << std::endl;
 		ssize_t bytesSent = send(clientSocket, response.c_str(), response.size(), 0);
 		if (bytesSent > 0) {
 			response.erase(0, bytesSent);

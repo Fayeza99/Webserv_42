@@ -1,8 +1,9 @@
 #pragma once
-#include "../../srcs/parsing/GlobalConfig.hpp"
+#include "GlobalConfig.hpp"
 #include "utils.hpp"
+#include "Parser.hpp"
+#include "RequestParser.hpp"
 #include "Response.hpp"
-#include "../../srcs/parsing/Parser.hpp"
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
@@ -43,9 +44,10 @@ class Server {
 		std::map<int, ClientState> clients;
 
 	public:
-		Server(const ServerConfig& config);
+		Server();
 		void setup();
 		void run();
+		void configure(const std::string& configFilePath);
 		int getServerSocket() const;
 
 };

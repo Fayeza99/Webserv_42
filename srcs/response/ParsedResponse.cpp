@@ -1,62 +1,69 @@
 #include "Response.hpp"
 
 // respond to a request with echo/...
-void	echo_request(RequestParser &req, int fd) {
-	std::string	response;
+std::string	echo_request(RequestParser &req) {
+	std::ostringstream	response;
 	std::string	echo;
 
 	echo = req.getUri().substr(6);
-	response = req.getHttpVersion() + " 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ";
-	response += std::to_string(echo.length());
-	response += "\r\n\r\n";
-	response += echo;
-	send_response(response, fd);
+	response << req.getHttpVersion() << " 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "
+			<< std::to_string(echo.length()) << "\r\n\r\n" << echo;
+	return (response.str());
 }
 
 // respond to .py request (CGI)
-void	exec_script(RequestParser &req, int fd) {
-	pid_t				pid;
+std::string	exec_script(RequestParser &req) {
 	const std::string	&uri = "." + req.getUri();
-	std::string			script_name;
-	int					pipe_fd[2];
+	int					in_pipe[2];// redirect request body to stdin of script
+	int					out_pipe[2];// redirect script output to stringstream
 
-	if (FILE *file = fopen(uri.c_str(), "r")) {
-		fclose(file);
-	} else {
-		std::cout << "no access: " << uri << std::endl;
-		send_response(req.getHttpVersion() + " 404 Not Found\r\n\r\n", fd);
-		return ;
-	}
-	if (chdir((uri.substr(0, uri.find_last_of("/"))).c_str()) == -1) {
-		std::cout << "chdir: " << uri.substr(0, uri.find_last_of("/")) << std::endl;
-		send_response(req.getHttpVersion() + " 404 Not Found\r\n\r\n", fd);
-		return ;
-	}
-	script_name = uri.substr(uri.find_last_of("/") + 1);
-	if (pipe(pipe_fd) == -1)
-		return ;
-	pid = fork();
 	
+	// check that script exists and chdir
+	if (FILE *file = fopen(uri.c_str(), "r"))
+		fclose(file);
+	else
+		return (req.getHttpVersion() + " 404 Not Found\r\n\r\n");
+	if (chdir((uri.substr(0, uri.find_last_of("/"))).c_str()) == -1)
+		return (req.getHttpVersion() + " 404 Not Found\r\n\r\n");
+	std::string	script_name = uri.substr(uri.find_last_of("/") + 1);
+
+	// pipes
+	if (pipe(in_pipe) == -1 || pipe(out_pipe) == -1)
+		return (req.getHttpVersion() + " 404 Not Found\r\n\r\n");
+
+	pid_t	pid = fork();
 	if (pid == 0) {
-		close(pipe_fd[1]);//write
-		if (dup2(pipe_fd[0], STDIN_FILENO) == -1)
+		close(in_pipe[1]);//write
+		close(out_pipe[0]);//read
+		if (dup2(in_pipe[0], STDIN_FILENO) == -1 || dup2(out_pipe[1], STDOUT_FILENO) == -1)
 			exit(1);
-		close(pipe_fd[0]);//read
-		dup2(fd, STDOUT_FILENO);
+		close(in_pipe[0]);//read
+		close(out_pipe[1]);//write
 		char *args[] = {(char *)"/Users/asemsey/.brew/bin/python3", (char *)script_name.c_str(), NULL};
 		execve(args[0], args, NULL);
-		std::cerr << "execve failed\n";
-		exit(1);
 	}
 	else if (pid > 0) {
-		close(pipe_fd[0]);//read
+		std::ostringstream	response;
+		char				buffer[4096];
+		size_t				bytes_read = 1;
+
+		close(in_pipe[0]);//read
+		close(out_pipe[1]);//write
 		if (!req.getBody().empty()) {
-			if (write(pipe_fd[1], req.getBody().c_str(), req.getBody().size()) == -1)
+			if (write(in_pipe[1], req.getBody().c_str(), req.getBody().size()) == -1)
 				std::cerr << "write failed\n";
 		}
-		close(pipe_fd[1]);//write
+		while (bytes_read > 0) {
+			bytes_read = read(out_pipe[0], buffer, sizeof(buffer));
+			buffer[bytes_read] = '\0';
+			response << buffer;
+		}
+		close(in_pipe[1]);//write
+		close(out_pipe[0]);//read
 		waitpid(pid, NULL, 0);
+		return (response.str());
 	}
+	return (req.getHttpVersion() + " 404 Not Found\r\n\r\n");
 }
 
 // void	handle_post(std::string req, int fd) {
@@ -69,15 +76,15 @@ void	exec_script(RequestParser &req, int fd) {
 // 	// std::cout << body << std::endl;
 // }
 
-void	respond(RequestParser &req, int client_fd) {
+std::string	response(RequestParser &req) {
 	const std::string	&uri = req.getUri();
 	if (req.getMethod() == "GET") {
 		if (uri == "/")
-			send_response(req.getHttpVersion() + " 200 OK\r\n\r\n", client_fd);
+			return (req.getHttpVersion() + " 200 OK\r\n\r\n");
 		else if (uri.substr(0, 6) == "/echo/")
-			echo_request(req, client_fd);
+			return (echo_request(req));
 		else if (!uri.compare(uri.length() - 3, 3, ".py"))
-			exec_script(req, client_fd);
-	} else
-		send_response(req.getHttpVersion() + " 404 Not Found\r\n\r\n", client_fd);
+			return (exec_script(req));
+	}
+	return (req.getHttpVersion() + " 404 Not Found\r\n\r\n");
 }
