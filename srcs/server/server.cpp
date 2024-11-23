@@ -13,7 +13,6 @@ void Server::configure(const std::string& configFilePath) {
 	Parser parser(readConfigFile(configFilePath));
 	GlobalConfig globalConfig = parser.parse();
 	serverConfigs = globalConfig.servers;
-	std::cout << serverConfigs.size() << std::endl;
 }
 
 /**
@@ -42,8 +41,6 @@ void Server::setNonBlocking(int fd) {
  *
  */
 void Server::setup() {
-	std::cout << serverConfigs.size();
-
 	kq = kqueue();
 	if (kq == -1) {
 		throw std::runtime_error("Failed to create kqueue");
