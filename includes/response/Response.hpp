@@ -7,9 +7,19 @@
 # include <vector>
 # include "RequestParser.hpp"
 
-// functions from Response.cpp:
+class Response {
+public:
+	Response(RequestParser &req);
+	Response(Response &other);
+	~Response();
 
-void		send_response(std::string str, int fd);
-void		handle_request(std::string req, int client_fd);
+	std::string		get_response(void);
+	RequestParser&	get_request(void);
 
-std::string	response(RequestParser &req);
+private:
+	std::string		exec_script(void);
+
+	RequestParser&	_request;
+
+};
+

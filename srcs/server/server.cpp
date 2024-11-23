@@ -1,4 +1,4 @@
-#include "Server.hpp"
+#include "server.hpp"
 
 Server::Server() : kq(-1) {}
 
@@ -202,8 +202,9 @@ void Server::handleRead(int clientSocket) {
 				// "\r\n"
 				// "Hello, world!";
 
-			RequestParser p(buffer);
-			clients[clientSocket].responseBuffer = response(p);
+			RequestParser	p(buffer);
+			Response		r(p);
+			clients[clientSocket].responseBuffer = r.get_response();
 
 			registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 		}

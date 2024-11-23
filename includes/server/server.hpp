@@ -2,11 +2,8 @@
 #include "GlobalConfig.hpp"
 #include "utils.hpp"
 #include "Parser.hpp"
-<<<<<<< HEAD
 #include "RequestParser.hpp"
 #include "Response.hpp"
-=======
->>>>>>> c3544417b1d16a1e0a62c823b5c05e02d6a65021
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
@@ -56,13 +53,10 @@ class Server {
 
 	public:
 		Server();
-<<<<<<< HEAD
-=======
+
 		void configure(const std::string& configFilePath);
->>>>>>> c3544417b1d16a1e0a62c823b5c05e02d6a65021
 		void setup();
 		void run();
-		void configure(const std::string& configFilePath);
 		int getServerSocket() const;
 
 };
