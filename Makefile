@@ -1,17 +1,20 @@
 # Compiler
 CXX = c++
 
-# Compiler Flags
-CXXFLAGS = -Wall -Wextra -Werror -std=c++17
+# Find all include directories recursively within 'includes/'
+INCLUDE_DIRS = $(shell find includes -type d)
 
-# Source Flags
-SOURCES = main.cpp
+# Compiler Flags
+CXXFLAGS = -Wall -Wextra -Werror -std=c++17 $(addprefix -I,$(INCLUDE_DIRS))
+
+# Source Files
+SOURCES = $(wildcard srcs/*.cpp srcs/*/*.cpp)
 
 # Object files directory
 OBJDIR = obj
 
 # Object files
-OBJECTS = $(SOURCES:%.cpp=$(OBJDIR)/%.o)
+OBJECTS = $(patsubst %.cpp,$(OBJDIR)/%.o,$(SOURCES))
 
 # Executable name
 EXEC = webserv
@@ -20,22 +23,19 @@ EXEC = webserv
 all: $(EXEC)
 
 # Linking all the object files to create the executable
-$(EXEC) : $(OBJECTS)
+$(EXEC): $(OBJECTS)
 	$(CXX) -o $(EXEC) $(OBJECTS)
 
 # Compiling each source file into the object directory
-$(OBJDIR)/%.o: %.cpp | $(OBJDIR)
+$(OBJDIR)/%.o: %.cpp
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-# Create the object directory if it doesn't exist
-$(OBJDIR):
-	mkdir -p $(OBJDIR)
 
 # Clean target for removing object files
 clean:
 	rm -rf $(OBJDIR)
 
-# Clean target for removing executable with the object files
+# Clean target for removing executable along with object files
 fclean: clean
 	rm -rf $(EXEC)
 
