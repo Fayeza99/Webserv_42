@@ -71,6 +71,7 @@ void Parser::parseListen(ServerConfig &server)
 	if (currentToken.type == TokenType::NUMBER)
 	{
 		server.listen_port = std::stoi(currentToken.value);
+		std::cout << server.listen_port << std::endl;
 		eat(TokenType::NUMBER);
 	}
 	else
@@ -224,6 +225,7 @@ GlobalConfig Parser::parse()
 		if (currentToken.type == TokenType::SERVER)
 		{
 			ServerConfig server = parseServer();
+			std::cout << server.listen_port << std::endl;
 			config.servers.push_back(server);
 		}
 		else

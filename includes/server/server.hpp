@@ -18,26 +18,33 @@
 
 class Server {
 	private:
-		ServerConfig serverConfig;
-		int serverSocket;
+		std::vector<ServerConfig> serverConfigs;
+		std::map<int, ServerConfig> serverSockets;
 		struct sockaddr_in serverAddr;
 		int kq;
 
 
 		void setNonBlocking(int fd);
 		void removeClient(int clientSocket);
-		void handleAccept();
+		void handleAccept(int serverSocket);
 		void handleRead(int clientSocket);
 		void handleWrite(int clientSocket);
 		void checkTimeouts();
 		void registerEvent(int fd, int filter, short flags);
 		void processEvent(struct kevent& event);
 
-		struct ClientState{
+		struct ClientState {
 			std::string requestBuffer;
 			std::string responseBuffer;
 			time_t lastActive;
-			ClientState() : lastActive(time(NULL)) {}
+			ServerConfig serverConfig;
+			// Default constructor
+    ClientState()
+        : lastActive(time(NULL)), serverConfig() {}
+
+    // Constructor with ServerConfig parameter
+    ClientState(const ServerConfig& config)
+        : lastActive(time(NULL)), serverConfig(config) {}
 		};
 
 		std::map<int, ClientState> clients;

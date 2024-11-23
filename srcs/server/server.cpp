@@ -1,6 +1,6 @@
 #include "Server.hpp"
 
-Server::Server() : serverSocket(-1), kq(-1) {}
+Server::Server() : kq(-1) {}
 
 /**
  * @brief this function calls the readConfigFile and
@@ -11,8 +11,9 @@ Server::Server() : serverSocket(-1), kq(-1) {}
  */
 void Server::configure(const std::string& configFilePath) {
 	Parser parser(readConfigFile(configFilePath));
-	// globalConfig = parser.parse();
-	serverConfig =  parser.parseServer();
+	GlobalConfig globalConfig = parser.parse();
+	serverConfigs = globalConfig.servers;
+	std::cout << serverConfigs.size() << std::endl;
 }
 
 /**
@@ -41,51 +42,56 @@ void Server::setNonBlocking(int fd) {
  *
  */
 void Server::setup() {
-	serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-	if (serverSocket == -1) {
-		throw std::runtime_error("Failed to create socket");
-	}
-
-	setNonBlocking(serverSocket);
-
-	int opt = 1;
-	if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
-		close(serverSocket);
-		throw std::runtime_error("Failed to set socket options");
-	}
-
-	memset(&serverAddr, 0, sizeof(serverAddr));
-	serverAddr.sin_family = AF_INET;
-
-	serverAddr.sin_addr.s_addr = INADDR_ANY;
-	serverAddr.sin_port = htons(serverConfig.listen_port);
-
-	if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == -1) {
-		close(serverSocket);
-		throw std::runtime_error("Failed to bind socket");
-	}
-
-	if (listen(serverSocket, SOMAXCONN) == -1) {
-		close(serverSocket);
-		throw std::runtime_error("Failed to listen on socket");
-	}
+	std::cout << serverConfigs.size();
 
 	kq = kqueue();
 	if (kq == -1) {
-		close(serverSocket);
 		throw std::runtime_error("Failed to create kqueue");
 	}
 
-	// Register the listening socket with kqueue
-	struct kevent change;
-	EV_SET(&change, serverSocket, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
-	if (kevent(kq, &change, 1, NULL, 0, NULL) == -1) {
-		close(serverSocket);
-		close(kq);
-		throw std::runtime_error("Failed to register server socket with kqueue");
-	}
 
-	std::cout << "Server is listening on port " << serverConfig.listen_port << std::endl;
+	for (const ServerConfig& config : serverConfigs) {
+
+		int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+		if (serverSocket == -1) {
+			throw std::runtime_error("Failed to create socket");
+		}
+
+		setNonBlocking(serverSocket);
+
+		int opt = 1;
+		if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
+			close(serverSocket);
+			throw std::runtime_error("Failed to set socket options");
+		}
+
+		struct sockaddr_in serverAddr;
+		memset(&serverAddr, 0, sizeof(serverAddr));
+		serverAddr.sin_family = AF_INET;
+		serverAddr.sin_addr.s_addr = INADDR_ANY;
+		serverAddr.sin_port = htons(config.listen_port);
+
+		if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == -1) {
+			close(serverSocket);
+			throw std::runtime_error("Failed to bind socket");
+		}
+
+		if (listen(serverSocket, SOMAXCONN) == -1) {
+			close(serverSocket);
+			throw std::runtime_error("Failed to listen on socket");
+		}
+
+		struct kevent change;
+		EV_SET(&change, serverSocket, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
+		if (kevent(kq, &change, 1, NULL, 0, NULL) == -1) {
+			close(serverSocket);
+			throw std::runtime_error("Failed to register server socket with kqueue");
+		}
+
+		serverSockets[serverSocket] = config;
+
+		std::cout << "Server is listening on port " << config.listen_port << std::endl;
+	}
 }
 
 /**
@@ -138,7 +144,7 @@ void Server::registerEvent(int fd, int filter, short flags) {
  * Initializes a ClientState for tracking request and response data
  *
  */
-void Server::handleAccept() {
+void Server::handleAccept(int serverSocket) {
 	struct sockaddr_in clientAddr;
 	socklen_t clientAddrLen = sizeof(clientAddr);
 	int clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &clientAddrLen);
@@ -160,7 +166,8 @@ void Server::handleAccept() {
 
 	registerEvent(clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
 
-	clients.emplace(clientSocket, ClientState());
+	const ServerConfig& config = serverSockets[serverSocket];
+	clients.emplace(clientSocket, ClientState(config));
 
 	std::cout	<< "Accepted new connection from "
 				<< inet_ntoa(clientAddr.sin_addr) << ":"
@@ -254,8 +261,10 @@ void Server::handleWrite(int clientSocket) {
  * @param event
  */
 void Server::processEvent(struct kevent& event) {
+	int fd = static_cast<int>(event.ident);
+
 	if (event.flags & EV_ERROR) {
-		if (static_cast<int>(event.ident) == serverSocket) {
+		if (serverSockets.count(fd)) {
 			std::cerr << "Error on server socket: " << strerror(static_cast<int>(event.data)) << std::endl;
 		} else {
 			int clientSocket = static_cast<int>(event.ident);
@@ -266,19 +275,15 @@ void Server::processEvent(struct kevent& event) {
 	}
 
 	if (event.filter == EVFILT_READ) {
-		if (static_cast<int>(event.ident) == serverSocket) {
-			handleAccept();
+		if (serverSockets.count(fd)) {
+			handleAccept(fd);
 		} else {
-			int clientSocket = static_cast<int>(event.ident);
-			handleRead(clientSocket);
+			handleRead(fd);
 		}
 	}
 
 	if (event.filter == EVFILT_WRITE) {
-		if (static_cast<int>(event.ident) != serverSocket) {
-			int clientSocket = static_cast<int>(event.ident);
-			handleWrite(clientSocket);
-		}
+			handleWrite(fd);
 	}
 }
 
@@ -329,8 +334,4 @@ void Server::run() {
 
 		checkTimeouts();
 	}
-}
-
-int Server::getServerSocket() const {
-	return serverSocket;
 }
