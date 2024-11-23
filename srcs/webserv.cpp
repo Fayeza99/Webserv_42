@@ -1,4 +1,4 @@
-#include "webserv.hpp"
+#include "Server.hpp"
 
 int main (int argc, char **argv) {
 	if (argc == 2) {
@@ -7,6 +7,7 @@ int main (int argc, char **argv) {
 			server.configure(argv[1]);
 			server.setup();
 			server.run();
+
 		} catch (const std::exception &e) {
 			std::cerr << "Opps! Something went wrong!" << e.what() << std::endl;
 			return 1;

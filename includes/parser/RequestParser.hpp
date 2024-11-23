@@ -17,6 +17,8 @@ class RequestParser {
 		void parseRequest(const std::string& request);
 
 	public:
+		bool isValidMethod(const std::string& methodStr);
+		std::string trim(const std::string& str);
 		RequestParser(const std::string& request);
 		std::string const& getMethod() const;
 		std::string const& getUri() const;
