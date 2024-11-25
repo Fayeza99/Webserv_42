@@ -1,4 +1,4 @@
-#include "Server.hpp"
+#include "server.hpp"
 
 Server::Server() : kq(-1) {}
 
@@ -189,14 +189,16 @@ void Server::handleRead(int clientSocket) {
 
 		size_t pos = clients[clientSocket].requestBuffer.find("\r\n\r\n");
 		if (pos != std::string::npos) {
-			std::string response =
-				"HTTP/1.1 200 OK\r\n"
-				"Content-Type: text/plain\r\n"
-				"Content-Length: 13\r\n"
-				"\r\n"
-				"Hello, world!";
+			// std::string response =
+				// "HTTP/1.1 200 OK\r\n"
+				// "Content-Type: text/plain\r\n"
+				// "Content-Length: 13\r\n"
+				// "\r\n"
+				// "Hello, world!";
 
-			clients[clientSocket].responseBuffer = response;
+			RequestParser	p(buffer);
+			Response		r(p);
+			clients[clientSocket].responseBuffer = r.get_response();
 
 			registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 		}
@@ -221,8 +223,8 @@ void Server::handleRead(int clientSocket) {
  */
 void Server::handleWrite(int clientSocket) {
 	std::string& response = clients[clientSocket].responseBuffer;
-
 	if (!response.empty()) {
+	std::cout << "RESPONSE:\n" << response << std::endl;
 		ssize_t bytesSent = send(clientSocket, response.c_str(), response.size(), 0);
 		if (bytesSent > 0) {
 			response.erase(0, bytesSent);

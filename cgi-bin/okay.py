@@ -1,6 +1,6 @@
 #!/Users/asemsey/.brew/bin/python3
 
-print("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n")
+print("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n")
 print("<!DOCTYPE html>")
 print("<html>")
 print("<body>")
