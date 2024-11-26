@@ -21,11 +21,7 @@ void Server::configure(const std::string& configFilePath) {
  * @param fd file descriptor of the socket
  */
 void Server::setNonBlocking(int fd) {
-	int flags = fcntl(fd, F_GETFL, 0);
-	if (flags == -1) {
-		throw std::runtime_error("Failed to get socket flags");
-	}
-	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1) {
 		throw std::runtime_error("Failed to set socket to non-blocking");
 	}
 }
@@ -147,9 +143,7 @@ void Server::handleAccept(int serverSocket) {
 	int clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &clientAddrLen);
 
 	if (clientSocket == -1) {
-		if (errno != EWOULDBLOCK && errno != EAGAIN) {
-			std::cerr << "Failed to accept connection: " << strerror(errno) << std::endl;
-		}
+		std::cerr << "Failed to accept connection: " << strerror(errno) << std::endl;
 		return;
 	}
 
@@ -212,10 +206,8 @@ void Server::handleRead(int clientSocket) {
 		std::cout << "Client " << clientSocket << " disconnected" << std::endl;
 		removeClient(clientSocket);
 	} else {
-		if (errno != EWOULDBLOCK && errno != EAGAIN) {
-			std::cerr << "recv() failed for client " << clientSocket << ": " << strerror(errno) << std::endl;
-			removeClient(clientSocket);
-		}
+		std::cerr << "recv() failed for client " << clientSocket << ": " << strerror(errno) << std::endl;
+		removeClient(clientSocket);
 	}
 
 }
