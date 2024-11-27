@@ -12,7 +12,6 @@ std::string	Response::exec_script() {
 	int					in_pipe[2];// redirect request body to stdin of script
 	int					out_pipe[2];// redirect script output to stringstream
 
-
 	// check that script exists and chdir
 	if (FILE *file = fopen(uri.c_str(), "r"))
 		fclose(file);

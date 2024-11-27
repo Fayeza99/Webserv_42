@@ -5,6 +5,7 @@
 # include <unistd.h>
 # include <sys/socket.h>
 # include <vector>
+# include <unordered_map>
 # include "RequestParser.hpp"
 # include <map>
 
@@ -14,16 +15,29 @@ public:
 	Response(Response &other);
 	~Response();
 
-	std::string		get_response(void);
-	RequestParser&	get_request(void);
+	std::string get_response(void);
+	RequestParser& get_request(void);
 
 private:
-	std::string		exec_script(void);
-
-	std::string	serve_static_file(void);
+	std::string exec_script(void);
+	std::string serve_static_file(void);
 	std::string get_content_type(const std::string& path) const;
 
 	RequestParser&	_request;
+
+	std::unordered_map<std::string, std::string> _headers;
+	std::string _body;
+	int _statuscode;
 	std::string _documentRoot;
 };
 
+// issues:
+// 		env completely missing
+// 		no response srtucture to save stuff to
+// 		status codes not set
+// 		logging would be nice
+// 		non blocking io (fcntl or kqueue)
+// 		Break Down the CGI Processing into States?
+// 		match nginx response structure
+// 		chunked requests?
+// 		response headers?
