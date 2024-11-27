@@ -6,10 +6,11 @@
 # include <sys/socket.h>
 # include <vector>
 # include "RequestParser.hpp"
+# include <map>
 
 class Response {
 public:
-	Response(RequestParser &req);
+	Response(RequestParser &req, const std::string& documentRoot);
 	Response(Response &other);
 	~Response();
 
@@ -19,7 +20,10 @@ public:
 private:
 	std::string		exec_script(void);
 
-	RequestParser&	_request;
+	std::string	serve_static_file(void);
+	std::string get_content_type(const std::string& path) const;
 
+	RequestParser&	_request;
+	std::string _documentRoot;
 };
 

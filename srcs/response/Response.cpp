@@ -1,12 +1,18 @@
 #include "Response.hpp"
 
+Response::Response(RequestParser &req, const std::string& documentRoot) : _request(req), _documentRoot(documentRoot) {}
+
+Response::Response(Response &other) : _request(other.get_request()) {}
+
+Response::~Response() {}
+
 // respond to .py request (CGI)
 std::string	Response::exec_script() {
 	const std::string	&uri = "." + _request.getUri();
 	int					in_pipe[2];// redirect request body to stdin of script
 	int					out_pipe[2];// redirect script output to stringstream
 
-	
+
 	// check that script exists and chdir
 	if (FILE *file = fopen(uri.c_str(), "r"))
 		fclose(file);
@@ -64,12 +70,38 @@ std::string	Response::get_response(void) {
 	}
 	return (_request.getHttpVersion() + " 404 Not Found\r\n\r\n");
 }
-// ------------------------------------------------------------------------------------
 
-Response::Response(RequestParser &req) : _request(req) {}
+/**
+ * @brief Helper method to determine the MIME type based on the file extension
+ *
+ * Provides default MIME type is none matched
+ *
+ * @param path of the file to send
+ * @return std::string MIME
+ */
+std::string Response::get_content_type(const std::string& path) const {
+	static std::map<std::string, std::string> mime_types = {
+		{".html", "text/html"},
+		{".htm", "text/html"},
+		{".css", "text/css"},
+		{".js", "application/javascript"},
+		{".png", "image/png"},
+		{".jpg", "image/jpeg"},
+		{".jpeg", "image/jpeg"},
+		{".gif", "image/gif"},
+		{".txt", "text/plain"},
+		{".pdf", "application/pdf"},
+	};
 
-Response::Response(Response &other) : _request(other.get_request()) {}
+	size_t dot = path.find_last_of('.');
+	if (dot != std::string::npos) {
+		std::string fileExtension = path.substr(dot);
+		if (mime_types.find(fileExtension) != mime_types.end()) {
+			return mime_types.find(fileExtension)->second;
+		}
+	}
+	return "application/octet-stream";
+}
 
-Response::~Response() {}
 
 RequestParser&	Response::get_request(void) {return _request;}
