@@ -105,9 +105,10 @@ LocationConfig Parser::parseLocation()
 	{
 		eat(TokenType::SLASH);
 
+		location.uri = "/";
 		if (currentToken.type == TokenType::STRING)
 		{
-			location.uri = currentToken.value;
+			location.uri += currentToken.value;
 			eat(TokenType::STRING);
 		}
 	}
