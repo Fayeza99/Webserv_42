@@ -4,6 +4,7 @@
 # include <iostream>
 # include <unistd.h>
 # include <sys/socket.h>
+# include <sys/wait.h>
 # include <vector>
 # include <unordered_map>
 # include "RequestParser.hpp"
@@ -22,12 +23,15 @@ private:
 	std::string exec_script(void);
 	std::string serve_static_file(void);
 	std::string get_content_type(const std::string& path) const;
+	void set_env(void);
 
 	RequestParser&	_request;
 
 	std::unordered_map<std::string, std::string> _headers;
 	std::string _body;
 	int _statuscode;
+	std::unordered_map<std::string, std::string> _environment;
+	char **_env;
 	std::string _documentRoot;
 };
 
@@ -41,3 +45,4 @@ private:
 // 		match nginx response structure
 // 		chunked requests?
 // 		response headers?
+
