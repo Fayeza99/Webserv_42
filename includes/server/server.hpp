@@ -5,7 +5,7 @@
 #include "RequestParser.hpp"
 #include "Response.hpp"
 #include <sys/types.h>
-#include <sys/event.h>
+// #include <sys/event.h>
 #include <sys/time.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -20,43 +20,17 @@
 
 class Server {
 	private:
-		std::vector<ServerConfig> serverConfigs;
-		std::map<int, ServerConfig> serverSockets;
+		GlobalConfig globalConfig;
+		ServerConfig serverConfig;
+		int serverSocket;
 		struct sockaddr_in serverAddr;
-		int kq;
-
-
-		void setNonBlocking(int fd);
-		void removeClient(int clientSocket);
-		void handleAccept(int serverSocket);
-		void handleRead(int clientSocket);
-		void handleWrite(int clientSocket);
-		void checkTimeouts();
-		void registerEvent(int fd, int filter, short flags);
-		void processEvent(struct kevent& event);
-
-		struct ClientState {
-			std::string requestBuffer;
-			std::string responseBuffer;
-			time_t lastActive;
-			ServerConfig serverConfig;
-			// Default constructor
-    ClientState()
-        : lastActive(time(NULL)), serverConfig() {}
-
-    // Constructor with ServerConfig parameter
-    ClientState(const ServerConfig& config)
-        : lastActive(time(NULL)), serverConfig(config) {}
-		};
-
-		std::map<int, ClientState> clients;
 
 	public:
 		Server();
-
+		void setNonBlocking(int fd);
 		void configure(const std::string& configFilePath);
 		void setup();
 		void run();
-		int getServerSocket() const;
+		ServerConfig getServerConfig() const;
 
 };
