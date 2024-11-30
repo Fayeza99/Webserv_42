@@ -105,9 +105,10 @@ LocationConfig Parser::parseLocation()
 	{
 		eat(TokenType::SLASH);
 
+		location.uri = "/";
 		if (currentToken.type == TokenType::STRING)
 		{
-			location.uri = currentToken.value;
+			location.uri += currentToken.value;
 			eat(TokenType::STRING);
 		}
 	}
@@ -116,7 +117,6 @@ LocationConfig Parser::parseLocation()
 
 	while (currentToken.type != TokenType::CLOSE_BRACE)
 	{
-		// std::cout << "Current Token: " << currentToken.value << std::endl;
 
 		if (currentToken.type == TokenType::STRING)
 		{
@@ -219,7 +219,7 @@ ServerConfig Parser::parseServer()
 GlobalConfig Parser::parse()
 {
 	GlobalConfig config;
-	while (currentToken.type == TokenType::EOF_TOKEN)
+	while (currentToken.type != TokenType::EOF_TOKEN)
 	{
 		if (currentToken.type == TokenType::SERVER)
 		{
@@ -231,53 +231,6 @@ GlobalConfig Parser::parse()
 			std::cerr << "Error: Unexpected token " << static_cast<int>(currentToken.type) << std::endl;
 			throw std::runtime_error("Parsing error: Unexpected token.");
 		}
-		// std::cout << tokenTypeToString(currentToken.type) << std::endl;
 	}
 	return config;
-}
-
-std::vector<int> Parser::initializeSockets(const GlobalConfig &config)
-{
-	std::vector<int> server_fds;
-
-	for (const auto &server : config.servers)
-	{
-		int server_fd, opt = 1;
-		struct sockaddr_in address;
-
-		server_fd = socket(AF_INET, SOCK_STREAM, 0);
-		if (server_fd == 0)
-		{
-			perror("socket failed");
-			exit(EXIT_FAILURE);
-		}
-
-		if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)))
-		{
-			perror("setsockopt");
-			exit(EXIT_FAILURE);
-		}
-
-		address.sin_family = AF_INET;
-		address.sin_addr.s_addr = INADDR_ANY;
-		address.sin_port = htons(server.listen_port);
-
-		if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
-		{
-			perror("bind failed");
-			exit(EXIT_FAILURE);
-		}
-
-		if (listen(server_fd, 3) < 0)
-		{
-			perror("listen");
-			exit(EXIT_FAILURE);
-		}
-
-		std::cout << "Listening on port " << server.listen_port << std::endl;
-
-		server_fds.push_back(server_fd);
-	}
-
-	return server_fds;
 }
