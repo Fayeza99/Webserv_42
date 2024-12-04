@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Random Inspirational Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            transition: background-color 0.5s ease;
+            color: #333;
+            text-align: center;
+            padding-top: 50px;
+        }
+        #quote {
+            font-size: 1.5em;
+            margin: 20px auto;
+            width: 60%;
+        }
+    </style>
+    <script>
+        function getRandomBackground() {
+            const colors = ['#FFCDD2', '#F8BBD0', '#E1BEE7', '#D1C4E9', '#BBDEFB', '#B3E5FC', '#B2EBF2', '#C8E6C9', '#DCEDC8', '#FFF9C4'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function getRandomQuote() {
+            const quotes = [
+                "Believe you can and you're halfway there.",
+                "The future belongs to those who prepare for it today.",
+                "It does not matter how slowly you go as long as you do not stop.",
+                "Everything you’ve ever wanted is on the other side of fear.",
+                "Success is not final, failure is not fatal: It is the courage to continue that counts.",
+				"Try try but never cry"
+            ];
+            return quotes[Math.floor(Math.random() * quotes.length)];
+        }
+
+        window.onload = function() {
+            document.body.style.backgroundColor = getRandomBackground();
+            document.getElementById('quote').innerText = getRandomQuote();
+        };
+    </script>
+</head>
+<body>
+    <h1>Welcome to Your Random Inspiration</h1>
+    <div id="quote"></div>
+</body>
+</html>

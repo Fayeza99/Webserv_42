@@ -12,7 +12,7 @@ Server::Server() : kq(-1) {}
 void Server::configure(const std::string& configFilePath) {
 	Parser parser(readConfigFile(configFilePath));
 	GlobalConfig globalConfig = parser.parse();
-	printGlobalConfig(globalConfig);
+	// printGlobalConfig(globalConfig);
 	serverConfigs = globalConfig.servers;
 }
 
@@ -198,7 +198,7 @@ void Server::handleRead(int clientSocket) {
 				// "Hello, world!";
 
 			RequestParser	p(buffer);
-			Response		r(p, "www/");
+			Response		r(p, "documents");
 			clients[clientSocket].responseBuffer = r.get_response();
 
 			registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);

@@ -74,11 +74,11 @@ void	Response::set_env(void) {
 std::string	Response::get_response(void) {
 	if (_request.getMethod() == "GET") {
 		if (_request.getUri() == "/")
-			return (_request.getHttpVersion() + " 200 OK\r\n\r\n");
+			return serve_static_file();
 		else if (!_request.getUri().compare(_request.getUri().length() - 3, 3, ".py"))
 			return (exec_script());
 	}
-	return (_request.getHttpVersion() + " 404 Not Found\r\n\r\n");
+	return serve_static_file();
 }
 
 /**
@@ -113,9 +113,90 @@ std::string Response::get_content_type(const std::string& path) const {
 	return "application/octet-stream";
 }
 
+std::string Response::get_error_response(const int errorCode) {
+	std::string errorMessage;
+	std::string errorFilePath;
+	switch (errorCode)
+	{
+	case 403:
+		errorMessage = " 403 Frobidden\r\n";
+		break;
+	case 404:
+		errorMessage = " 404 Not Found\r\n";
+		break;
+	case 500:
+		errorMessage = " 500 Internal Server Error\r\n";
+		break;
+	default:
+		errorMessage = " 500 Internal Server Error\r\n";
+		break;
+	}
+	std::ostringstream response;
+	response	<< _request.getHttpVersion() << errorMessage
+				<< "Content-Length: 0\r\n"
+				<< "Connection: close\r\n\r\n";
+	return response.str();
+}
+
+std::string Response::serve_static_file() {
+	std::string uri = _request.getUri();
+	std::string filePath = _documentRoot + uri;
+
+	// If URI ends with '/', append the first default file
+	if (!uri.empty() && uri.back() == '/') {
+		std::vector<std::string> defaultFiles; // create method to get approriate defaultFiles fromt the strucutre
+		defaultFiles.push_back("index.html");
+		if (!defaultFiles.empty()) {
+			filePath += defaultFiles[0];
+		} else {
+			return (get_error_response(403));
+		}
+	}
+
+	char resolvedPath[PATH_MAX];
+	if (realpath(filePath.c_str(), resolvedPath) == NULL) {
+		return get_error_response(404);
+	}
+
+	std::string resolvedFilePath(resolvedPath);
+
+	char resolvedDocRoot[PATH_MAX];
+	if (realpath(_documentRoot.c_str(), resolvedDocRoot) == NULL) {
+		std::cerr << "Failed to resolve document root: " << _documentRoot << std::endl;
+		return get_error_response(500);
+	}
+
+	std::string resolvedDocRootStr(resolvedDocRoot);
+	if (resolvedFilePath.find(resolvedDocRootStr) != 0) {
+		return get_error_response(403);
+	}
+
+	std::ifstream file(resolvedFilePath.c_str(), std::ios::in | std::ios::binary);
+	if (!file.is_open()) {
+		return get_error_response(404);
+	}
+
+	std::ostringstream bodyStream;
+	bodyStream << file.rdbuf();
+	std::string body = bodyStream.str();
+
+	std::string contentType = get_content_type(resolvedFilePath);
+
+	std::ostringstream response;
+	response	<< _request.getHttpVersion() << " 200 OK\r\n"
+				<< "Content-Type: " << contentType << "\r\n"
+				<< "Content-Length: " << body.size() << "\r\n"
+				<< "Connection: close\r\n\r\n"
+				<< body;
+
+	return response.str();
+}
+
+
+
 // -------------------------------------------------------------------------------------------
 
-Response::Response(RequestParser &req, const std::string& documentRoot) 
+Response::Response(RequestParser &req, const std::string& documentRoot)
 	: _request(req), _documentRoot(documentRoot) {}
 
 Response::Response(Response &other) : _request(other.get_request()) {}
