@@ -116,25 +116,40 @@ std::string Response::get_content_type(const std::string& path) const {
 std::string Response::get_error_response(const int errorCode) {
 	std::string errorMessage;
 	std::string errorFilePath;
+
 	switch (errorCode)
 	{
 	case 403:
 		errorMessage = " 403 Frobidden\r\n";
+		errorFilePath = "documents/error_pages/403.html";
 		break;
 	case 404:
 		errorMessage = " 404 Not Found\r\n";
+		errorFilePath = "documents/error_pages/404.html";
 		break;
 	case 500:
 		errorMessage = " 500 Internal Server Error\r\n";
+		errorFilePath = "documents/error_pages/500.html";
 		break;
 	default:
 		errorMessage = " 500 Internal Server Error\r\n";
+		errorFilePath = "documents/error_pages/500.html";
 		break;
 	}
+
+	char resolvedPath[PATH_MAX];
+	realpath(errorFilePath.c_str(), resolvedPath);
 	std::ostringstream response;
+	std::ifstream file(resolvedPath);
+	std::stringstream buffer;
+	buffer << file.rdbuf();
+	std::string body = buffer.str();
+	file.close();
 	response	<< _request.getHttpVersion() << errorMessage
-				<< "Content-Length: 0\r\n"
-				<< "Connection: close\r\n\r\n";
+				<< "Content-Length: " << body.length() << "\r\n"
+				<< "Connection: close\r\n\r\n"
+				<< body;
+
 	return response.str();
 }
 
@@ -170,6 +185,7 @@ std::string Response::serve_static_file() {
 	if (resolvedFilePath.find(resolvedDocRootStr) != 0) {
 		return get_error_response(403);
 	}
+
 
 	std::ifstream file(resolvedFilePath.c_str(), std::ios::in | std::ios::binary);
 	if (!file.is_open()) {
