@@ -18,6 +18,7 @@ public:
 
 	std::string get_response(void);
 	RequestParser& get_request(void);
+	int get_status(void);
 
 private:
 	std::string exec_script(void);
@@ -26,14 +27,17 @@ private:
 	std::string get_content_type(const std::string& path) const;
 	void set_env(void);
 
-	RequestParser&	_request;
+	RequestParser& _request;
+	std::string _response;
 
-	std::unordered_map<std::string, std::string> _headers;
+	std::map<std::string, std::string> _headers;
 	std::string _body;
-	// int _statuscode;
-	std::unordered_map<std::string, std::string> _environment;
-	// char **_env;
+	int _statuscode;
 	std::string _documentRoot;
+	std::map<std::string, std::string> _env;
+	char **_environment;
+	char **_argv;
+
 };
 
 // issues:

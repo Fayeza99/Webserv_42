@@ -54,31 +54,42 @@ std::string	Response::exec_script() {
 	return (_request.getHttpVersion() + " 404 Not Found\r\n\r\n");
 }
 
-//     env["GATEWAY_INTERFACE"] = "CGI/1.1";
-//     env["SERVER_PROTOCOL"] = "HTTP/1.1";
-//     env["REQUEST_METHOD"] = request_method;
-//     env["QUERY_STRING"] = query_string;
-//     env["SCRIPT_NAME"] = script_name;
-//     env["SERVER_NAME"] = server_name;
-//     env["SERVER_PORT"] = std::to_string(server_port);
-//     env["REMOTE_ADDR"] = "127.0.0.1"; // Example; replace with actual client address.
-//     env["REMOTE_PORT"] = "12345";     // Example; replace with actual client port.
-//     env["PATH_INFO"] = path_info;
-void	Response::set_env(void) {
-	_environment["GATEWAY_INTERFACE"] = "CGI/1.1";
-	_environment["SERVER_PROTOCOL"] = "HTTP/1.1";
-	_environment["REQUEST_METHOD"] = _request.getMethod();
-	_environment["QUERY_STRING"] = _request.getUri();
-}
-
 std::string	Response::get_response(void) {
 	if (_request.getMethod() == "GET") {
-		if (_request.getUri() == "/")
-			return serve_static_file();
-		else if (!_request.getUri().compare(_request.getUri().length() - 3, 3, ".py"))
+		if (_request.getUri().find(".py"))
 			return (exec_script());
+		return serve_static_file();
 	}
 	return serve_static_file();
+}
+
+std::string get_scriptname(const std::string &uri) {
+	std::string name = uri;
+	while (true) {
+		if (name.find(".py") != std::string::npos && name.find("/") != std::string::npos
+			&& name.find(".py") < name.find("/"))
+			return name.substr(0, name.find(".py") + 2);
+		if (name.find(".py") != std::string::npos && name.find("/") == std::string::npos)
+			return name;
+		name = name.substr(name.find("/"));
+	}
+	return name;
+}
+
+void Response::set_env(void) {
+	_env["PATH_INFO"] = 
+	_env["GATEWAY_INTERFACE"] = "CGI/1.1";
+	_env["SERVER_PROTOCOL"] = "HTTP/1.1";
+	_env["REQUEST_METHOD"] = _request.getMethod();
+	if (_request.getUri().find("?") != std::string::npos)
+		_env["QUERY_STRING"] = _request.getUri().substr(_request.getUri().find("?") + 1);
+	if (_request.getUri().find(".py") != std::string::npos)
+		_env["SCRIPT_NAME"] = get_scriptname(_request.getUri());
+	// _env["SERVER_NAME"] = server_name;
+	// _env["SERVER_PORT"] = std::to_string(server_port);
+	// _env["REMOTE_ADDR"] = _request.getHeaders()[""];
+	// _env["REMOTE_PORT"] = "12345";
+	// _environment = (char **)malloc(sizeof(char *) * (x));
 }
 
 /**
@@ -213,11 +224,13 @@ std::string Response::serve_static_file() {
 
 // -------------------------------------------------------------------------------------------
 
-Response::Response(RequestParser &req, const std::string& documentRoot)
-	: _request(req), _documentRoot(documentRoot) {}
+Response::Response(RequestParser &req, const std::string& documentRoot) 
+	: _request(req), _statuscode(200), _documentRoot(documentRoot) {}
 
 Response::Response(Response &other) : _request(other.get_request()) {}
 
 Response::~Response() {}
 
 RequestParser&	Response::get_request(void) {return _request;}
+
+int Response::get_status(void) {return _statuscode;}
