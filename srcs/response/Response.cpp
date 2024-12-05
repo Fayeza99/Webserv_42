@@ -70,6 +70,35 @@ std::string	Response::get_response(void) {
 	return (_request.getHttpVersion() + " 404 Not Found\r\n\r\n");
 }
 
+std::string get_scriptname(const std::string &uri) {
+	std::string name = uri;
+	while (true) {
+		if (name.find(".py") != std::string::npos && name.find("/") != std::string::npos
+			&& name.find(".py") < name.find("/"))
+			return name.substr(0, name.find(".py") + 2);
+		if (name.find(".py") != std::string::npos && name.find("/") == std::string::npos)
+			return name;
+		name = name.substr(name.find("/"));
+	}
+	return name;
+}
+
+void Response::set_env(void) {
+	_env["PATH_INFO"] = 
+	_env["GATEWAY_INTERFACE"] = "CGI/1.1";
+	_env["SERVER_PROTOCOL"] = "HTTP/1.1";
+	_env["REQUEST_METHOD"] = _request.getMethod();
+	if (_request.getUri().find("?") != std::string::npos)
+		_env["QUERY_STRING"] = _request.getUri().substr(_request.getUri().find("?") + 1);
+	if (_request.getUri().find(".py") != std::string::npos)
+		_env["SCRIPT_NAME"] = get_scriptname(_request.getUri());
+	// _env["SERVER_NAME"] = server_name;
+	// _env["SERVER_PORT"] = std::to_string(server_port);
+	// _env["REMOTE_ADDR"] = _request.getHeaders()[""];
+	// _env["REMOTE_PORT"] = "12345";
+	// _environment = (char **)malloc(sizeof(char *) * (x));
+}
+
 /**
  * @brief Helper method to determine the MIME type based on the file extension
  *

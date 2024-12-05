@@ -22,13 +22,20 @@ private:
 	std::string exec_script(void);
 	std::string serve_static_file(void);
 	std::string get_content_type(const std::string& path) const;
+	// utils
+	void set_env(void);
 
-	RequestParser&	_request;
+	RequestParser& _request;
+	std::string _response;
 
 	std::unordered_map<std::string, std::string> _headers;
 	std::string _body;
 	int _statuscode;
 	std::string _documentRoot;
+	std::unordered_map<std::string, std::string> _env;
+	char **_environment;
+	char **_argv;
+
 };
 
 // issues:
