@@ -35,8 +35,8 @@ private:
 	int _statuscode;
 	std::string _documentRoot;
 	std::map<std::string, std::string> _env;
-	char **_environment;
-	char **_argv;
+	// char **_environment;
+	// char **_argv;
 
 };
 

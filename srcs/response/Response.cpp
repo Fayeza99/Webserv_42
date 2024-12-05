@@ -1,5 +1,14 @@
 #include "Response.hpp"
 
+std::string	Response::get_response(void) {
+	if (_request.getMethod() == "GET") {
+		if (_request.getUri().find(".py") != std::string::npos)
+			return (exec_script());
+		return serve_static_file();
+	}
+	return serve_static_file();
+}
+
 // respond to .py request (CGI)
 std::string	Response::exec_script() {
 	const std::string	&uri = "." + _request.getUri();
@@ -54,15 +63,6 @@ std::string	Response::exec_script() {
 	return (_request.getHttpVersion() + " 404 Not Found\r\n\r\n");
 }
 
-std::string	Response::get_response(void) {
-	if (_request.getMethod() == "GET") {
-		if (_request.getUri().find(".py"))
-			return (exec_script());
-		return serve_static_file();
-	}
-	return serve_static_file();
-}
-
 std::string get_scriptname(const std::string &uri) {
 	std::string name = uri;
 	while (true) {
@@ -77,7 +77,7 @@ std::string get_scriptname(const std::string &uri) {
 }
 
 void Response::set_env(void) {
-	_env["PATH_INFO"] = 
+	_env["PATH_INFO"] = "";
 	_env["GATEWAY_INTERFACE"] = "CGI/1.1";
 	_env["SERVER_PROTOCOL"] = "HTTP/1.1";
 	_env["REQUEST_METHOD"] = _request.getMethod();
@@ -219,8 +219,6 @@ std::string Response::serve_static_file() {
 
 	return response.str();
 }
-
-
 
 // -------------------------------------------------------------------------------------------
 
