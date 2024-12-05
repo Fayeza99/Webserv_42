@@ -54,29 +54,14 @@ std::string	Response::exec_script() {
 	return (_request.getHttpVersion() + " 404 Not Found\r\n\r\n");
 }
 
-//     env["GATEWAY_INTERFACE"] = "CGI/1.1";
-//     env["SERVER_PROTOCOL"] = "HTTP/1.1";
-//     env["REQUEST_METHOD"] = request_method;
-//     env["QUERY_STRING"] = query_string;
-//     env["SCRIPT_NAME"] = script_name;
-//     env["SERVER_NAME"] = server_name;
-//     env["SERVER_PORT"] = std::to_string(server_port);
-//     env["REMOTE_ADDR"] = "127.0.0.1"; // Example; replace with actual client address.
-//     env["REMOTE_PORT"] = "12345";     // Example; replace with actual client port.
-//     env["PATH_INFO"] = path_info;
-void	Response::set_env(void) {
-	_environment["GATEWAY_INTERFACE"] = "CGI/1.1";
-	_environment["SERVER_PROTOCOL"] = "HTTP/1.1";
-	_environment["REQUEST_METHOD"] = _request.getMethod();
-	_environment["QUERY_STRING"] = _request.getUri();
-}
-
 std::string	Response::get_response(void) {
 	if (_request.getMethod() == "GET") {
 		if (_request.getUri() == "/")
 			return (_request.getHttpVersion() + " 200 OK\r\n\r\n");
-		else if (!_request.getUri().compare(_request.getUri().length() - 3, 3, ".py"))
+		else if (_request.getUri().find(".py"))
 			return (exec_script());
+		// else if (!_request.getUri().compare(_request.getUri().length() - 3, 3, ".py"))
+		// 	return (exec_script());
 	}
 	return (_request.getHttpVersion() + " 404 Not Found\r\n\r\n");
 }
@@ -145,10 +130,12 @@ std::string Response::get_content_type(const std::string& path) const {
 // -------------------------------------------------------------------------------------------
 
 Response::Response(RequestParser &req, const std::string& documentRoot) 
-	: _request(req), _documentRoot(documentRoot) {}
+	: _request(req), _statuscode(200), _documentRoot(documentRoot) {}
 
 Response::Response(Response &other) : _request(other.get_request()) {}
 
 Response::~Response() {}
 
 RequestParser&	Response::get_request(void) {return _request;}
+
+int Response::get_status(void) {return _statuscode;}

@@ -18,6 +18,7 @@ public:
 
 	std::string get_response(void);
 	RequestParser& get_request(void);
+	int get_status(void);
 
 private:
 	std::string exec_script(void);
@@ -28,13 +29,11 @@ private:
 	RequestParser& _request;
 	std::string _response;
 
-	std::unordered_map<std::string, std::string> _headers;
+	std::map<std::string, std::string> _headers;
 	std::string _body;
 	int _statuscode;
-	std::unordered_map<std::string, std::string> _environment;
-	char **_env;
 	std::string _documentRoot;
-	std::unordered_map<std::string, std::string> _env;
+	std::map<std::string, std::string> _env;
 	char **_environment;
 	char **_argv;
 
