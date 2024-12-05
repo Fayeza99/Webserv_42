@@ -178,14 +178,12 @@ void Server::handleRead(int clientSocket) {
 
 	if (bytesRead > 0) {
 		buffer[bytesRead] = '\0';
-		std::cout << "Received request from the client " << clientSocket << ":\n" << buffer << std::endl;
-
 		clients[clientSocket].lastActive = time(nullptr);
 		clients[clientSocket].requestBuffer += buffer;
 
 		size_t pos = clients[clientSocket].requestBuffer.find("\r\n\r\n");
 		if (pos != std::string::npos) {
-			RequestParser	p(buffer);
+			RequestParser	p(clients[clientSocket].requestBuffer);
 			Response		r(p, "documents");
 			clients[clientSocket].responseBuffer = r.get_response();
 
