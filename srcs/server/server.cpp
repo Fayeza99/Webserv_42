@@ -105,11 +105,6 @@ void Server::removeClient(int clientSocket) {
 		std::cerr << "Failed to remove read event for client " << clientSocket << ": " << strerror(errno) << std::endl;
 	}
 
-	EV_SET(&change, clientSocket, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-	if (kevent(this->kq, &change, 1, NULL, 0, NULL) == -1) {
-		std::cerr << "Failed to remove write event for client " << clientSocket << ": " << strerror(errno) << std::endl;
-	}
-
 	close(clientSocket);
 
 	clients.erase(clientSocket);
@@ -190,13 +185,6 @@ void Server::handleRead(int clientSocket) {
 
 		size_t pos = clients[clientSocket].requestBuffer.find("\r\n\r\n");
 		if (pos != std::string::npos) {
-			// std::string response =
-				// "HTTP/1.1 200 OK\r\n"
-				// "Content-Type: text/plain\r\n"
-				// "Content-Length: 13\r\n"
-				// "\r\n"
-				// "Hello, world!";
-
 			RequestParser	p(buffer);
 			Response		r(p, "documents");
 			clients[clientSocket].responseBuffer = r.get_response();
@@ -210,7 +198,6 @@ void Server::handleRead(int clientSocket) {
 		std::cerr << "recv() failed for client " << clientSocket << ": " << strerror(errno) << std::endl;
 		removeClient(clientSocket);
 	}
-
 }
 
 /**
@@ -225,7 +212,6 @@ void Server::handleRead(int clientSocket) {
 void Server::handleWrite(int clientSocket) {
 	std::string& response = clients[clientSocket].responseBuffer;
 	if (!response.empty()) {
-	std::cout << "RESPONSE:\n" << response << std::endl;
 		ssize_t bytesSent = send(clientSocket, response.c_str(), response.size(), 0);
 		if (bytesSent > 0) {
 			response.erase(0, bytesSent);
@@ -239,6 +225,7 @@ void Server::handleWrite(int clientSocket) {
 		}
 
 		if (response.empty()) {
+
 			registerEvent(clientSocket, EVFILT_WRITE, EV_DELETE);
 		}
 	}
@@ -277,6 +264,7 @@ void Server::processEvent(struct kevent& event) {
 	if (event.filter == EVFILT_WRITE) {
 			handleWrite(fd);
 	}
+
 }
 
 /**
@@ -319,11 +307,9 @@ void Server::run() {
 			std::cerr << "kevent error: " << strerror(errno) << std::endl;
 			break;
 		}
-
 		for (int i = 0; i < nev; ++i) {
 			processEvent(eventList[i]);
 		}
-
 		checkTimeouts();
 	}
 }

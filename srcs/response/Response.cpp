@@ -196,6 +196,7 @@ std::string Response::serve_static_file() {
 	bodyStream << file.rdbuf();
 	std::string body = bodyStream.str();
 
+
 	std::string contentType = get_content_type(resolvedFilePath);
 
 	std::ostringstream response;
