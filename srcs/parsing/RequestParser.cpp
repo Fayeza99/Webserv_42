@@ -2,6 +2,7 @@
 #include <sstream>
 #include <cstdlib>
 #include <set>
+#include <algorithm>
 
 RequestParser::RequestParser(const std::string &request)
 {
