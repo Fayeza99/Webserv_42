@@ -18,7 +18,7 @@ bool RequestParser::isValidMethod(const std::string &methodStr)
 
 void RequestParser::parseRequest(const std::string &request)
 {
-	std::cout << "request: " << request << std::endl;
+	// std::cout << "request: " << request << std::endl;
 	std::istringstream request_stream(request);
 	std::string line;
 
