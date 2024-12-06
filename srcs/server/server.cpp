@@ -193,7 +193,7 @@ void Server::handleRead(int clientSocket) {
 		std::cout << "Client " << clientSocket << " disconnected" << std::endl;
 		removeClient(clientSocket);
 	} else {
-		std::cerr << "recv() failed for client " << clientSocket << ": " << strerror(errno) << std::endl;
+		std::cerr << "Read error on client " << clientSocket << ", removing client." << std::endl;
 		removeClient(clientSocket);
 	}
 }
@@ -214,14 +214,15 @@ void Server::handleWrite(int clientSocket) {
 		if (bytesSent > 0) {
 			response.erase(0, bytesSent);
 			clients[clientSocket].lastActive = time(nullptr);
-		}
-
-		if (bytesSent == -1) {
-			std::cerr << "send() failed for client " << clientSocket << ": " << strerror(errno) << std::endl;
+		} else if (bytesSent == 0) {
+			std::cerr << "Client " << clientSocket << " disconnected during write." << std::endl;
+			removeClient(clientSocket);
+			return;
+		} else {
+			std::cerr << "Write error on client " << clientSocket << ", removing client." << std::endl;
 			removeClient(clientSocket);
 			return;
 		}
-
 		if (response.empty()) {
 
 			registerEvent(clientSocket, EVFILT_WRITE, EV_DELETE);
