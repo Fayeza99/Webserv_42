@@ -10,9 +10,10 @@
 # include "RequestParser.hpp"
 #include <fstream>
 # include <map>
+# include "ClientState.hpp"
 class Response {
 public:
-	Response(RequestParser &req, const std::string& documentRoot);
+	Response(RequestParser &req, ClientState& clientState);
 	Response(Response &other);
 	~Response();
 
@@ -29,11 +30,11 @@ private:
 
 	RequestParser& _request;
 	std::string _response;
+	ClientState& _clientState;
 
 	std::map<std::string, std::string> _headers;
 	std::string _body;
 	int _statuscode;
-	std::string _documentRoot;
 	std::map<std::string, std::string> _env;
 	// char **_environment;
 	// char **_argv;

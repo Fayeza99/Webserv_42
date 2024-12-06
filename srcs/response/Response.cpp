@@ -166,6 +166,7 @@ std::string Response::get_error_response(const int errorCode) {
 
 std::string Response::serve_static_file() {
 	std::string uri = _request.getUri();
+	std::string _documentRoot = "www/";
 	std::string filePath = _documentRoot + uri;
 
 	// If URI ends with '/', append the first default file
@@ -222,10 +223,10 @@ std::string Response::serve_static_file() {
 
 // -------------------------------------------------------------------------------------------
 
-Response::Response(RequestParser &req, const std::string& documentRoot) 
-	: _request(req), _statuscode(200), _documentRoot(documentRoot) {}
+Response::Response(RequestParser &req, ClientState& clientState)
+	: _request(req), _clientState(clientState), _statuscode(200) {}
 
-Response::Response(Response &other) : _request(other.get_request()) {}
+// Response::Response(Response &other) : _request(other.get_request()) {}
 
 Response::~Response() {}
 

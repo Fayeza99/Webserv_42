@@ -183,9 +183,9 @@ void Server::handleRead(int clientSocket) {
 
 		size_t pos = clients[clientSocket].requestBuffer.find("\r\n\r\n");
 		if (pos != std::string::npos) {
-			RequestParser	p(clients[clientSocket].requestBuffer);
-			Response		r(p, "documents");
-			clients[clientSocket].responseBuffer = r.get_response();
+			RequestParser	request(clients[clientSocket].requestBuffer);
+			Response		response(request, clients[clientSocket]);
+			clients[clientSocket].responseBuffer = response.get_response();
 
 			registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 		}

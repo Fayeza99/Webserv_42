@@ -4,6 +4,7 @@
 #include "Parser.hpp"
 #include "RequestParser.hpp"
 #include "Response.hpp"
+#include "ClientState.hpp"
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
@@ -34,20 +35,6 @@ class Server {
 		void checkTimeouts();
 		void registerEvent(int fd, int filter, short flags);
 		void processEvent(struct kevent& event);
-
-		struct ClientState {
-			std::string requestBuffer;
-			std::string responseBuffer;
-			time_t lastActive;
-			ServerConfig serverConfig;
-			// Default constructor
-    ClientState()
-        : lastActive(time(NULL)), serverConfig() {}
-
-    // Constructor with ServerConfig parameter
-    ClientState(const ServerConfig& config)
-        : lastActive(time(NULL)), serverConfig(config) {}
-		};
 
 		std::map<int, ClientState> clients;
 
