@@ -132,19 +132,19 @@ std::string Response::get_error_response(const int errorCode) {
 	{
 	case 403:
 		errorMessage = " 403 Frobidden\r\n";
-		errorFilePath = "documents/error_pages/403.html";
+		errorFilePath = "www/error/403.html";
 		break;
 	case 404:
 		errorMessage = " 404 Not Found\r\n";
-		errorFilePath = "documents/error_pages/404.html";
+		errorFilePath = "www/error/404.html";
 		break;
 	case 500:
 		errorMessage = " 500 Internal Server Error\r\n";
-		errorFilePath = "documents/error_pages/500.html";
+		errorFilePath = "www/error/500.html";
 		break;
 	default:
 		errorMessage = " 500 Internal Server Error\r\n";
-		errorFilePath = "documents/error_pages/500.html";
+		errorFilePath = "www/error/500.html";
 		break;
 	}
 
@@ -166,15 +166,22 @@ std::string Response::get_error_response(const int errorCode) {
 
 std::string Response::serve_static_file() {
 	std::string uri = _request.getUri();
-
-	std::string _documentRoot = getDocumentRoot(_clientState.serverConfig, uri);
-	std::cout << "_documentRoot: " << _documentRoot << std::endl;
-
+	LocationConfig location = getLocation(_clientState.serverConfig, uri);
+	std::string _documentRoot = location.document_root;
 	std::string filePath = _documentRoot + uri;
 
+	bool isSupported = std::find(
+		location.supported_methods.begin(),
+		location.supported_methods.end(),
+		_request.getMethod()
+	) != location.supported_methods.end();
+
+	if (!isSupported) {
+		return get_error_response(403);
+	}
+
 	if (!uri.empty() && uri.back() == '/') {
-		std::vector<std::string> defaultFiles;
-		defaultFiles.push_back("index.html");
+		std::vector<std::string> defaultFiles = location.default_files;
 		if (!defaultFiles.empty()) {
 			filePath += defaultFiles[0];
 		} else {

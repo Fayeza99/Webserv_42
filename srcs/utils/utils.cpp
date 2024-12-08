@@ -122,3 +122,35 @@ std::string getDocumentRoot(const ServerConfig &serverConfig, const std::string 
 
 	return bestMatchRoot;
 }
+
+LocationConfig getLocation(const ServerConfig &serverConfig, const std::string &uri) {
+	LocationConfig bestMatchLocation;
+	size_t bestMatchLength = 0;
+
+	std::string _uri;
+	std::string document_root;
+	std::vector<std::string> default_files;
+	std::set<std::string> supported_methods;
+	std::map<std::string, std::string> cgi_paths;
+
+	for (const LocationConfig &loc : serverConfig.locations) {
+		if (uri.compare(0, loc.uri.size(), loc.uri) == 0) {
+			if (loc.uri.size() > bestMatchLength) {
+				_uri = loc.uri;
+				document_root = loc.document_root;
+				default_files = loc.default_files;
+				supported_methods = loc.supported_methods;
+				cgi_paths = loc.cgi_paths;
+				bestMatchLength = loc.uri.size();
+			}
+		}
+	}
+
+	bestMatchLocation.uri = _uri;
+	bestMatchLocation.document_root = document_root;
+	bestMatchLocation.default_files = default_files;
+	bestMatchLocation.supported_methods = supported_methods;
+	bestMatchLocation.cgi_paths = cgi_paths;
+
+	return bestMatchLocation;
+}

@@ -12,7 +12,7 @@ Server::Server() : kq(-1) {}
 void Server::configure(const std::string& configFilePath) {
 	Parser parser(readConfigFile(configFilePath));
 	GlobalConfig globalConfig = parser.parse();
-	// printGlobalConfig(globalConfig);
+	printGlobalConfig(globalConfig, 4);
 	serverConfigs = globalConfig.servers;
 }
 
