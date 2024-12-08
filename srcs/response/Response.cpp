@@ -166,12 +166,14 @@ std::string Response::get_error_response(const int errorCode) {
 
 std::string Response::serve_static_file() {
 	std::string uri = _request.getUri();
-	std::string _documentRoot = "www/";
+
+	std::string _documentRoot = getDocumentRoot(_clientState.serverConfig, uri);
+	std::cout << "_documentRoot: " << _documentRoot << std::endl;
+
 	std::string filePath = _documentRoot + uri;
 
-	// If URI ends with '/', append the first default file
 	if (!uri.empty() && uri.back() == '/') {
-		std::vector<std::string> defaultFiles; // create method to get approriate defaultFiles fromt the strucutre
+		std::vector<std::string> defaultFiles;
 		defaultFiles.push_back("index.html");
 		if (!defaultFiles.empty()) {
 			filePath += defaultFiles[0];

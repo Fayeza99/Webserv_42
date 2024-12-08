@@ -92,3 +92,33 @@ void printGlobalConfig(const GlobalConfig& config, int indent = 0) {
 		printServerConfig(server, indent + 4);
 	}
 }
+
+
+
+/**
+ * @brief Get the Document Root
+ *
+ * Check if the location's URI is a prefix of the requested URI.
+ * For example: loc.uri = "/data", uri = "/data/info"
+ * uri.compare(0, loc.uri.size(), loc.uri) == 0 means uri starts with loc.uri
+ * @param serverConfig
+ * @param uri
+ * @return std::string
+ */
+std::string getDocumentRoot(const ServerConfig &serverConfig, const std::string &uri) {
+	std::string bestMatchRoot = "";
+	size_t bestMatchLength = 0;
+
+	for (std::vector<LocationConfig>::const_iterator it = serverConfig.locations.begin(); it != serverConfig.locations.end(); ++it) {
+		const LocationConfig &loc = *it;
+
+		if (uri.compare(0, loc.uri.size(), loc.uri) == 0) {
+			if (loc.uri.size() > bestMatchLength) {
+				bestMatchRoot = loc.document_root;
+				bestMatchLength = loc.uri.size();
+			}
+		}
+	}
+
+	return bestMatchRoot;
+}

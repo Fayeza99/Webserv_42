@@ -11,6 +11,7 @@
 #include <fstream>
 # include <map>
 # include "ClientState.hpp"
+# include "utils.hpp"
 class Response {
 public:
 	Response(RequestParser &req, ClientState& clientState);
