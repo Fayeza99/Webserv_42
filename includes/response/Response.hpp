@@ -3,6 +3,7 @@
 # include <string>
 # include <iostream>
 # include <unistd.h>
+# include <fcntl.h>
 # include <sys/socket.h>
 # include <sys/wait.h>
 # include <vector>
@@ -33,6 +34,7 @@ private:
 	void set_env(void);
 
 	std::string serve_static_file(void);
+	std::string handle_delete(void);
 	std::string get_error_response(const int errorCode);
 	std::string get_content_type(const std::string& path) const;
 
@@ -56,6 +58,7 @@ void	test_1(ClientState& clientstate);
 void	test_2(ClientState& clientstate);
 void	test_3(ClientState& clientstate);
 void	test_4(ClientState& clientstate);
+void	test_5(ClientState& clientstate);
 
 // issues:
 // 		env completely missing

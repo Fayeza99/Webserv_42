@@ -88,3 +88,14 @@ void	test_4(ClientState& clientstate) {
 	}
 	file.close();
 }
+
+// delete request to /del/deleteme.pls
+void	test_5(ClientState& clientstate) {
+	std::ofstream file("logfiles/log5.txt");
+	file << "-----------------------------------TEST_5\n";
+	std::string request_string = "DELETE /del/deleteme.pls HTTP/1.1\n\n";
+	RequestParser request(request_string);
+	Response r(request, clientstate);
+	print_response(r, file);
+	file.close();
+}

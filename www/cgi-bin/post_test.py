@@ -4,7 +4,7 @@ import cgi
 import cgitb
 cgitb.enable()  # Enable debugging for CGI scripts
 
-print("Content-Type: text/html\n")  # HTTP header
+print("Content-Type: text/html")  # HTTP header
 
 # Parse form data
 form = cgi.FieldStorage()

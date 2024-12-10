@@ -19,10 +19,11 @@ std::string	Response::exec_script() {
 		return (get_error_response(500));
 
 	pid_t	pid = fork();
-	if (pid == 0)
+	if (pid == 0) {
 		cgi_child(in_pipe, out_pipe);
-	else if (pid > 0)
+	} else if (pid > 0) {
 		return (cgi_parent(in_pipe, out_pipe, pid));
+	}
 	return (get_error_response(500));
 }
 
@@ -44,7 +45,7 @@ void Response::cgi_child(int in_pipe[2], int out_pipe[2]) {
 		exit(1);
 
 	char *args[] = {(char *)"/usr/bin/python3", (char *)script_name.c_str(), NULL};
-	// std::cerr << "executing cgi script...\n";
+	// std::cerr << "executing cgi script: " << script_name << "\n";
 	execve(args[0], args, _environment.data());
 	exit(1);//execve failed
 }
@@ -120,6 +121,7 @@ void Response::set_env(void) {
 	_env.push_back("SERVER_PROTOCOL=HTTP/1.1");
 	_env.push_back("REQUEST_METHOD=" + _request.getMethod());
 	_env.push_back("SCRIPT_NAME=" + get_scriptname(uri));
+	_env.push_back("CONTENT_LENGTH=" + std::to_string(_request.getBody().size()));
 	if (queryPos != std::string::npos) {
 		_env.push_back("PATH_INFO=" + uri.substr(0, queryPos));
 		_env.push_back("QUERY_STRING=" + uri.substr(queryPos + 1));

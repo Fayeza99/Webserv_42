@@ -2,13 +2,24 @@
 
 // this is the function that controls how the response is be created
 std::string	Response::get_response(void) {
-	// std::cerr << "response started\n";
 	if (_request.getMethod() == "GET" || _request.getMethod() == "POST") {
 		if (_request.getUri().find(".py") != std::string::npos)
 			return (exec_script());
 		return serve_static_file();
 	}
-	return serve_static_file();
+	if (_request.getMethod() == "DELETE")
+		return handle_delete();
+	return get_error_response(403);
+}
+
+std::string Response::handle_delete(void) {
+	if (FILE *file = fopen(_filePath.c_str(), "r"))
+		fclose(file);
+	else
+		return (get_error_response(404));
+	if (!remove(_filePath.c_str()))
+		return (_request.getHttpVersion() + " 204 No Content\r\n\r\n");
+	return (get_error_response(403));
 }
 
 /**
@@ -142,7 +153,6 @@ std::string Response::serve_static_file() {
 				<< "Content-Length: " << body.size() << "\r\n"
 				<< "Connection: close\r\n\r\n"
 				<< body;
-
 	return response.str();
 }
 
