@@ -2,14 +2,13 @@
 
 // this is the function that controls how the response is be created
 std::string	Response::get_response(void) {
-	if (_request.getMethod() == "GET" || _request.getMethod() == "POST") {
-		if (_request.getUri().find(".py") != std::string::npos)
-			return (exec_script());
-		return serve_static_file();
-	}
+	if (!method_allowed())
+		return get_error_response(405);
+	if (_request.getUri().find(".py") != std::string::npos)
+		return exec_script();
 	if (_request.getMethod() == "DELETE")
 		return handle_delete();
-	return get_error_response(403);
+	return serve_static_file();
 }
 
 std::string Response::handle_delete(void) {
@@ -54,6 +53,15 @@ std::string Response::get_content_type(const std::string& path) const {
 	return "application/octet-stream";
 }
 
+bool Response::method_allowed(void) {
+	bool isSupported = std::find(
+		_location.supported_methods.begin(),
+		_location.supported_methods.end(),
+		_request.getMethod()
+	) != _location.supported_methods.end();
+	return isSupported;
+}
+
 std::string Response::get_error_response(const int errorCode) {
 	std::string errorMessage;
 	std::string errorFilePath;
@@ -67,6 +75,10 @@ std::string Response::get_error_response(const int errorCode) {
 	case 404:
 		errorMessage = " 404 Not Found\r\n";
 		errorFilePath = "www/error/404.html";
+		break;
+	case 405:
+		errorMessage = " 405 Method Not Allowed\r\n";
+		errorFilePath = "www/error/405.html";
 		break;
 	case 500:
 		errorMessage = " 500 Internal Server Error\r\n";
@@ -97,14 +109,8 @@ std::string Response::get_error_response(const int errorCode) {
 std::string Response::serve_static_file() {
 	std::string uri = _request.getUri();
 
-	bool isSupported = std::find(
-		_location.supported_methods.begin(),
-		_location.supported_methods.end(),
-		_request.getMethod()
-	) != _location.supported_methods.end();
-
-	if (!isSupported) {
-		return get_error_response(403);
+	if (!method_allowed() || _request.getMethod() != "GET") {
+		return get_error_response(405);
 	}
 
 	if (!uri.empty() && uri.back() == '/') {
@@ -134,7 +140,6 @@ std::string Response::serve_static_file() {
 		return get_error_response(403);
 	}
 
-
 	std::ifstream file(resolvedFilePath.c_str(), std::ios::in | std::ios::binary);
 	if (!file.is_open()) {
 		return get_error_response(404);
@@ -143,7 +148,6 @@ std::string Response::serve_static_file() {
 	std::ostringstream bodyStream;
 	bodyStream << file.rdbuf();
 	std::string body = bodyStream.str();
-
 
 	std::string contentType = get_content_type(resolvedFilePath);
 
