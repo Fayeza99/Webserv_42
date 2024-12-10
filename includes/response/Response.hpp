@@ -28,16 +28,20 @@ public:
 
 private:
 	std::string exec_script(void);
+	std::string cgi_parent(int in_pipe[2], int out_pipe[2], pid_t pid);
+	void cgi_child(int in_pipe[2], int out_pipe[2]);
+	void set_env(void);
+
 	std::string serve_static_file(void);
 	std::string get_error_response(const int errorCode);
 	std::string get_content_type(const std::string& path) const;
-	void set_env(void);
 
 	RequestParser& _request;
 	std::string _response;
 	ClientState& _clientState;
 	LocationConfig _location;
 	std::string _documentRoot;
+	std::string _filePath;
 
 	std::map<std::string, std::string> _headers;
 	std::string _body;
