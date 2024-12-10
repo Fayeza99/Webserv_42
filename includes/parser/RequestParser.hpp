@@ -8,6 +8,7 @@
 
 class RequestParser {
 	private:
+		std::string _request;
 		std::string method;
 		std::string uri;
 		std::string httpVersion;
@@ -20,6 +21,7 @@ class RequestParser {
 		bool isValidMethod(const std::string& methodStr);
 		std::string trim(const std::string& str);
 		RequestParser(const std::string& request);
+		std::string const& getRequest() const;
 		std::string const& getMethod() const;
 		std::string const& getUri() const;
 		std::string const& getHttpVersion() const;

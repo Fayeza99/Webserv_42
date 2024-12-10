@@ -123,6 +123,7 @@ std::string getDocumentRoot(const ServerConfig &serverConfig, const std::string 
 	return bestMatchRoot;
 }
 
+
 LocationConfig getLocation(const ServerConfig &serverConfig, const std::string &uri) {
 	LocationConfig bestMatchLocation;
 	size_t bestMatchLength = 0;
@@ -133,6 +134,7 @@ LocationConfig getLocation(const ServerConfig &serverConfig, const std::string &
 	std::set<std::string> supported_methods;
 	std::map<std::string, std::string> cgi_paths;
 
+	// choose the location from the config file, that fits the request best
 	for (const LocationConfig &loc : serverConfig.locations) {
 		if (uri.compare(0, loc.uri.size(), loc.uri) == 0) {
 			if (loc.uri.size() > bestMatchLength) {

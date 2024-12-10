@@ -1,4 +1,4 @@
-#!/Users/asemsey/.brew/bin/python3
+#!/usr/bin/python3
 import os
 
 env = os.environ
@@ -8,6 +8,6 @@ print("<!DOCTYPE html>")
 print("<html>")
 print("<body>")
 print("<h1>Hello!</h1>")
-print("<p>this page is kinda pointless.</p>\n<p>but here are some environment variables for you:", env , "</p>")
+print("<p>this page is kinda pointless.</p>\n<p>but here are the environment variables for you:", env , "</p>")
 print("</body>")
 print("</html>")

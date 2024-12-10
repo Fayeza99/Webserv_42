@@ -6,12 +6,16 @@
 # include <sys/socket.h>
 # include <sys/wait.h>
 # include <vector>
-# include <unordered_map>
+# include <algorithm>
 # include "RequestParser.hpp"
-#include <fstream>
+# include <fstream>
 # include <map>
 # include "ClientState.hpp"
 # include "utils.hpp"
+
+# define PATH_MAX 1024
+# define BUFFER_SIZE 1024
+
 class Response {
 public:
 	Response(RequestParser &req, ClientState& clientState);
@@ -32,19 +36,25 @@ private:
 	RequestParser& _request;
 	std::string _response;
 	ClientState& _clientState;
+	LocationConfig _location;
+	std::string _documentRoot;
 
 	std::map<std::string, std::string> _headers;
 	std::string _body;
 	int _statuscode;
-	std::map<std::string, std::string> _env;
-	// char **_environment;
+	std::vector<std::string> _env;
+	std::vector<char *> _environment;
 	// char **_argv;
 
 };
 
+void	test_1(ClientState& clientstate);
+void	test_2(ClientState& clientstate);
+void	test_3(ClientState& clientstate);
+void	test_4(ClientState& clientstate);
+
 // issues:
 // 		env completely missing
-// 		no response srtucture to save stuff to
 // 		status codes not set
 // 		logging would be nice
 // 		non blocking io (fcntl or kqueue)

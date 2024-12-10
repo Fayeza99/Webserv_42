@@ -4,7 +4,7 @@
 #include <set>
 #include <algorithm>
 
-RequestParser::RequestParser(const std::string &request)
+RequestParser::RequestParser(const std::string &request) : _request(request)
 {
 	parseRequest(request);
 }
@@ -113,6 +113,11 @@ void RequestParser::parseRequest(const std::string &request)
 std::string const &RequestParser::getMethod() const
 {
 	return method;
+}
+
+std::string const &RequestParser::getRequest() const
+{
+	return _request;
 }
 
 std::string const &RequestParser::getHttpVersion() const
