@@ -14,19 +14,16 @@ std::string	Response::get_response(void) {
 // respond to .py request (CGI)
 std::string	Response::exec_script() {
 	std::string filePath = _documentRoot + _request.getUri();
+	std::string	script_name = filePath.substr(filePath.find_last_of("/") + 1);
 	int					in_pipe[2];// redirect request body to stdin of script
 	int					out_pipe[2];// redirect script output to stringstream
 
 	// std::cerr << "exec_script called on: " << filePath << std::endl;
-	// check that script exists, chdir and set environment
+	// check that script exists and set environment
 	if (FILE *file = fopen(filePath.c_str(), "r"))
 		fclose(file);
 	else
 		return (get_error_response(404));
-
-	if (chdir((filePath.substr(0, filePath.find_last_of("/"))).c_str()) == -1)
-		return (get_error_response(500));
-	std::string	script_name = filePath.substr(filePath.find_last_of("/") + 1);
 	set_env();
 
 	// in_pipe:		parent writes request body to [1], script reads it from [0]
@@ -36,10 +33,12 @@ std::string	Response::exec_script() {
 
 	pid_t	pid = fork();
 	if (pid == 0) {
+		if (chdir((filePath.substr(0, filePath.find_last_of("/"))).c_str()) == -1)
+			exit(1);
 		close(in_pipe[1]);//child doesnt write request body
 		close(out_pipe[0]);//child doesnt read its own output (duh)
 		if (dup2(in_pipe[0], STDIN_FILENO) == -1 || dup2(out_pipe[1], STDOUT_FILENO) == -1)
-			return (get_error_response(500));
+			exit(1);
 		close(in_pipe[0]);//dup successful, fds no longer needed
 		close(out_pipe[1]);//now acessible through STDIN and STDOUT
 		char *args[] = {(char *)"/usr/bin/python3", (char *)script_name.c_str(), NULL};
