@@ -1,23 +1,4 @@
-// #include "server.hpp"
-
-#include "GlobalConfig.hpp"
-#include "utils.hpp"
-#include "Parser.hpp"
-#include "RequestParser.hpp"
-#include "Response.hpp"
-#include "ClientState.hpp"
-#include <sys/types.h>
-#include <sys/time.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <cstring>
-#include <cerrno>
-#include <ctime>
-#include <map>
-#include <string>
-#include <iostream>
+#include "server.hpp"
 
 int main (int argc, char **argv) {
 	if (argc > 2 ) {
@@ -52,10 +33,10 @@ int main (int argc, char **argv) {
 // 	ServerConfig serverconf = parser.parseServer();//this means only one serverconfig is used from the file
 // 	ClientState clientstate(serverconf);
 
-// 	test_1(clientstate);
+// 	// test_1(clientstate);
 // 	// test_2(clientstate);
 // 	// test_3(clientstate);
 // 	// test_4(clientstate);
-// 	// test_5(clientstate);
+// 	test_5(clientstate);
 // 	return (0);
 // }

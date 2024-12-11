@@ -20,7 +20,6 @@
 class Response {
 public:
 	Response(RequestParser &req, ClientState& clientState);
-	Response(Response &other);
 	~Response();
 
 	std::string get_response(void);
@@ -37,6 +36,7 @@ private:
 	std::string handle_delete(void);
 	std::string get_error_response(const int errorCode);
 	bool method_allowed(void);
+	void setFilePath();
 	std::string get_content_type(const std::string& path) const;
 
 	RequestParser& _request;

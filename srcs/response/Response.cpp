@@ -112,16 +112,7 @@ std::string Response::serve_static_file() {
 	if (!method_allowed() || _request.getMethod() != "GET") {
 		return get_error_response(405);
 	}
-
-	if (!uri.empty() && uri.back() == '/') {
-		std::vector<std::string> defaultFiles = _location.default_files;
-		if (!defaultFiles.empty()) {
-			_filePath += defaultFiles[0];
-		} else {
-			return (get_error_response(403));
-		}
-	}
-
+	
 	char resolvedPath[PATH_MAX];
 	if (realpath(_filePath.c_str(), resolvedPath) == NULL) {
 		return get_error_response(404);
@@ -160,13 +151,28 @@ std::string Response::serve_static_file() {
 	return response.str();
 }
 
+void Response::setFilePath() {
+	if (_request.getUri() == _location.uri) {
+		if (_location.default_files.size() < 1)
+			_filePath = "";
+		else
+			_filePath = _documentRoot + "/" + _location.default_files[0];
+	} else {
+		std::string uri = _request.getUri().substr(_location.uri.length());
+		_filePath = _documentRoot + "/" + uri;
+	}
+	std::cout << "final filepath: " << _filePath;
+}
+
 // -------------------------------------------------------------------------------------------
 
 Response::Response(RequestParser &req, ClientState& clientState)
 	: _request(req), _clientState(clientState), _statuscode(200) {
 	_location = getLocation(_clientState.serverConfig, _request.getUri());
 	_documentRoot = _location.document_root;
-	_filePath = _documentRoot + _request.getUri();
+	// _filePath = _documentRoot + "/";
+	// std::cout << "FilePath: " << _filePath << std::endl;
+	setFilePath();
 }
 
 // Response::Response(Response &other) : _request(other.get_request()) {}
