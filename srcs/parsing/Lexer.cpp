@@ -40,7 +40,6 @@ Token Lexer::nextToken()
 		return nextToken();
 	}
 
-	// std::cout << c << std::endl;
 
 	switch (c)
 	{
@@ -53,11 +52,10 @@ Token Lexer::nextToken()
 	case '/':
 		{
 			std::string uri;
-			uri += '/';
+			uri += c;
 			while (pos < input.size())
 			{
 				char current = input[pos];
-				std::cout << current << std::endl;
 				if (isalnum(current) || current == '/' || current == '.' || current == '_' || current == '-' || current == '?'
 					|| current == '=' || current == '&' || current == '%')
 				{
@@ -68,7 +66,6 @@ Token Lexer::nextToken()
 					break;
 				}
 			}
-
 			return Token(TokenType::URI, uri);
 		}
 	default:
@@ -87,6 +84,8 @@ Token Lexer::nextToken()
 				return Token(TokenType::HOSTNAME);
 			if (word == "error_page")
 				return Token(TokenType::ERROR_PAGE);
+			if (word == "autoindex")
+				return Token(TokenType::AUTOINDEX);
 			if (word == "location")
 				return Token(TokenType::LOCATION);
 			return Token(TokenType::STRING, word);

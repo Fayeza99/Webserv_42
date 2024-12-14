@@ -30,6 +30,8 @@ std::string tokenTypeToString(TokenType type)
 		return "ALLOW";
 	case TokenType::ERROR_PAGE:
 		return "ERROR_PAGE";
+	case TokenType::AUTOINDEX:
+		return "AUTOINDEX";
 	default:
 		return "UNKNOWN";
 	}
@@ -109,6 +111,25 @@ void Parser::parseErrorPage(ServerConfig &server)
 	eat(TokenType::SEMICOLON);
 }
 
+void Parser::parseAutoIndex(ServerConfig &server) {
+	eat(TokenType::AUTOINDEX);
+	if ((currentToken.type != TokenType::STRING) || (currentToken.value != "on" && currentToken.value != "off")) {
+		std::cerr << "Parsing error at position " << lexer.getPosition()
+				  << ": expected on/off (String) after 'autoindex', but found "
+				  << tokenTypeToString(currentToken.type) << std::endl;
+		throw std::runtime_error("Syntax error in 'error_page' directive.");
+	}
+
+	if (currentToken.value == "on") {
+		server.autoIndex = true;
+	} else {
+		server.autoIndex = false;
+	}
+
+	eat(TokenType::STRING);
+	eat(TokenType::SEMICOLON);
+}
+
 LocationConfig Parser::parseLocation()
 {
 	LocationConfig location;
@@ -182,6 +203,7 @@ LocationConfig Parser::parseLocation()
 ServerConfig Parser::parseServer()
 {
 	ServerConfig server;
+	server.autoIndex = false;
 	eat(TokenType::SERVER);
 	eat(TokenType::OPEN_BRACE);
 
@@ -202,6 +224,9 @@ ServerConfig Parser::parseServer()
 		else if (currentToken.type == TokenType::ERROR_PAGE)
 		{
 			parseErrorPage(server);
+		}
+		else if (currentToken.type == TokenType::AUTOINDEX) {
+			parseAutoIndex(server);
 		}
 		else
 		{

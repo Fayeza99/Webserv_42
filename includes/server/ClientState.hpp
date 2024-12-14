@@ -6,6 +6,9 @@
 struct ClientState {
     std::string requestBuffer;
     std::string responseBuffer;
+    std::string clientIPAddress;
+    int clientPort;
+
     time_t lastActive;
     ServerConfig serverConfig;
 

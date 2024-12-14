@@ -24,6 +24,7 @@ class ServerConfig
 {
 public:
 	int listen_port;
+	bool autoIndex;
 	std::vector<std::string> hostnames;
 	std::map<int, std::string> error_pages;
 	std::vector<LocationConfig> locations;

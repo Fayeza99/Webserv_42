@@ -156,9 +156,13 @@ void Server::handleAccept(int serverSocket) {
 	const ServerConfig& config = serverSockets[serverSocket];
 	clients.emplace(clientSocket, ClientState(config));
 
+	std::string clientip(inet_ntoa(clientAddr.sin_addr));
+	clients[clientSocket].clientIPAddress = clientip;
+	clients[clientSocket].clientPort = ntohs(clientAddr.sin_port);
+
 	std::cout	<< "Accepted new connection from "
-				<< inet_ntoa(clientAddr.sin_addr) << ":"
-				<< ntohs(clientAddr.sin_port)
+				<< clients[clientSocket].clientIPAddress << ":"
+				<< clients[clientSocket].clientPort
 				<< ", socket " << clientSocket << std::endl;
 }
 
