@@ -178,7 +178,6 @@ void Server::handleRead(int clientSocket) {
 
 	if (bytesRead > 0) {
 		buffer[bytesRead] = '\0';
-		std::cout << "Request: \n" << buffer << std::endl;
 		clients[clientSocket].lastActive = time(nullptr);
 		clients[clientSocket].requestBuffer += buffer;
 
@@ -187,7 +186,6 @@ void Server::handleRead(int clientSocket) {
 			RequestParser	request(clients[clientSocket].requestBuffer);
 			Response		response(request, clients[clientSocket]);
 			clients[clientSocket].responseBuffer = response.get_response();
-			std::cout << "Response: \n" << clients[clientSocket].responseBuffer << std::endl;
 			registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 		}
 	} else if (bytesRead == 0) {

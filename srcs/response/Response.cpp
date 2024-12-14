@@ -1,6 +1,10 @@
 #include "Response.hpp"
 
-// this is the function that controls how the response is be created
+/**
+ * @brief The function uses appropriate methods to generate response for specific requestes.
+ *
+ * @return std::string reponse in the form of string
+ */
 std::string	Response::get_response(void) {
 	if (!method_allowed())
 		return get_error_response(405);
@@ -11,6 +15,11 @@ std::string	Response::get_response(void) {
 	return serve_static_file();
 }
 
+/**
+ * @brief Handles the delete requests and generate error responses if any.
+ *
+ * @return std::string Response
+ */
 std::string Response::handle_delete(void) {
 	if (FILE *file = fopen(_filePath.c_str(), "r"))
 		fclose(file);
@@ -53,6 +62,12 @@ std::string Response::get_content_type(const std::string& path) const {
 	return "application/octet-stream";
 }
 
+/**
+ * @brief Checks if the request method is allowed for the specific location
+ *
+ * @return true if allowed
+ * @return false if not allowed
+ */
 bool Response::method_allowed(void) {
 	bool isSupported = std::find(
 		_location.supported_methods.begin(),
@@ -62,6 +77,12 @@ bool Response::method_allowed(void) {
 	return isSupported;
 }
 
+/**
+ * @brief Provides the correct error file on the bases of errorCode provided
+ *
+ * @param errorCode used for deciding which file to serve
+ * @return std::string file in the form of string as response
+ */
 std::string Response::get_error_response(const int errorCode) {
 	std::string errorMessage;
 	std::string errorFilePath;
@@ -106,13 +127,18 @@ std::string Response::get_error_response(const int errorCode) {
 	return response.str();
 }
 
+/**
+ * @brief Servers static files
+ *
+ * @return std::string Response in the form of string
+ */
 std::string Response::serve_static_file() {
 	std::string uri = _request.getUri();
 
 	if (!method_allowed() || _request.getMethod() != "GET") {
 		return get_error_response(405);
 	}
-	
+
 	char resolvedPath[PATH_MAX];
 	if (realpath(_filePath.c_str(), resolvedPath) == NULL) {
 		return get_error_response(404);
@@ -151,6 +177,10 @@ std::string Response::serve_static_file() {
 	return response.str();
 }
 
+/**
+ * @brief Sets the file path according to the location
+ *
+ */
 void Response::setFilePath() {
 	if (_request.getUri() == _location.uri) {
 		if (_location.default_files.size() < 1)
@@ -161,21 +191,15 @@ void Response::setFilePath() {
 		std::string uri = _request.getUri().substr(_location.uri.length());
 		_filePath = _documentRoot + "/" + uri;
 	}
-	std::cout << "final filepath: " << _filePath;
 }
 
-// -------------------------------------------------------------------------------------------
 
 Response::Response(RequestParser &req, ClientState& clientState)
 	: _request(req), _clientState(clientState), _statuscode(200) {
 	_location = getLocation(_clientState.serverConfig, _request.getUri());
 	_documentRoot = _location.document_root;
-	// _filePath = _documentRoot + "/";
-	// std::cout << "FilePath: " << _filePath << std::endl;
 	setFilePath();
 }
-
-// Response::Response(Response &other) : _request(other.get_request()) {}
 
 Response::~Response() {
 	_env.clear();
