@@ -128,11 +128,10 @@ void Response::set_env(void) {
 		_env.push_back("PATH_INFO=" + uri);
 		_env.push_back("QUERY_STRING=");
 	}
-	// missing some socket info variables!!!
-	//  env["SERVER_NAME"] = server_name;
-    // env["SERVER_PORT"] = std::to_string(server_port);
-    // env["REMOTE_ADDR"] = "127.0.0.1"; // Example; replace with actual client address.
-    // env["REMOTE_PORT"] = "12345";  
+	_env.push_back("SERVER_PORT=" + std::to_string(_clientState.serverConfig.listen_port));
+	_env.push_back("REMOTE_PORT=" + std::to_string(_clientState.clientPort));
+	_env.push_back("REMOTE_ADDR=" + _clientState.clientIPAddress);
+	// _env["SERVER_NAME"] = server_name;???
 
 	auto headers = _request.getHeaders();
 	for (const auto& header : headers) {
