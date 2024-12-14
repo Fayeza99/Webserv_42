@@ -4,15 +4,13 @@ import cgi
 import cgitb
 cgitb.enable()  # Enable debugging for CGI scripts
 
-print("HTTP/1.1 200 OK\r\nContent-Type: text/html")  # HTTP header
-
 # Parse form data
 form = cgi.FieldStorage()
 name = form.getvalue("name", "(no name provided)")
 message = form.getvalue("message", "(no message provided)")
 
 # Generate response
-print(f"""
+response = f"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,4 +25,9 @@ print(f"""
     <a href="/form.html">Go Back</a>
 </body>
 </html>
-""")
+"""
+# headers
+print("Content-Type: text/html\r\n", end="")
+print(f"Content-Length:", len(response), "\r\n", end="")
+print("\r\n", end="")
+print(response, end="")

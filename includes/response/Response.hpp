@@ -1,6 +1,7 @@
 #pragma once
 
 # include <string>
+# include <cstdio>
 # include <iostream>
 # include <unistd.h>
 # include <fcntl.h>

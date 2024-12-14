@@ -21,11 +21,10 @@ std::string	Response::get_response(void) {
  * @return std::string Response
  */
 std::string Response::handle_delete(void) {
-	if (FILE *file = fopen(_filePath.c_str(), "r"))
-		fclose(file);
-	else
-		return (get_error_response(404));
-	if (!remove(_filePath.c_str()))
+	char realPath[PATH_MAX];
+	if (realpath(_filePath.c_str(), realPath) == NULL)
+		return get_error_response(404);
+	if (!std::remove(_filePath.c_str()))
 		return (_request.getHttpVersion() + " 204 No Content\r\n\r\n");
 	return (get_error_response(403));
 }

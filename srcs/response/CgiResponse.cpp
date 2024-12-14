@@ -7,10 +7,9 @@ std::string	Response::exec_script() {
 
 	// std::cerr << "exec_script called on: " << filePath << std::endl;
 	// check that script exists and set environment
-	if (FILE *file = fopen(_filePath.c_str(), "r"))
-		fclose(file);
-	else
-		return (get_error_response(404));
+	char realPath[PATH_MAX];
+	if (realpath(_filePath.c_str(), realPath) == NULL)
+		return get_error_response(404);
 	set_env();
 
 	// in_pipe:		parent writes request body to [1], script reads it from [0]
@@ -75,7 +74,7 @@ std::string Response::cgi_parent(int in_pipe[2], int out_pipe[2], pid_t pid) {
 	close(in_pipe[1]);//writitng to script input finished
 	close(out_pipe[0]);//reading response also finished
 	waitpid(pid, NULL, 0);
-	return (response.str());
+	return (_request.getHttpVersion() + " 200 OK\r\n" + response.str());
 }
 
 
@@ -121,7 +120,7 @@ void Response::set_env(void) {
 	_env.push_back("SERVER_PROTOCOL=HTTP/1.1");
 	_env.push_back("REQUEST_METHOD=" + _request.getMethod());
 	_env.push_back("SCRIPT_NAME=" + get_scriptname(uri));
-	_env.push_back("CONTENT_LENGTH=" + std::to_string(_request.getBody().size()));
+	_env.push_back("CONTENT_LENGTH=" + std::to_string(_request.getBody().length()));
 	if (queryPos != std::string::npos) {
 		_env.push_back("PATH_INFO=" + uri.substr(0, queryPos));
 		_env.push_back("QUERY_STRING=" + uri.substr(queryPos + 1));
@@ -129,6 +128,11 @@ void Response::set_env(void) {
 		_env.push_back("PATH_INFO=" + uri);
 		_env.push_back("QUERY_STRING=");
 	}
+	// missing some socket info variables!!!
+	//  env["SERVER_NAME"] = server_name;
+    // env["SERVER_PORT"] = std::to_string(server_port);
+    // env["REMOTE_ADDR"] = "127.0.0.1"; // Example; replace with actual client address.
+    // env["REMOTE_PORT"] = "12345";  
 
 	auto headers = _request.getHeaders();
 	for (const auto& header : headers) {

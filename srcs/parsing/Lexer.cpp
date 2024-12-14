@@ -54,7 +54,6 @@ Token Lexer::nextToken()
 		{
 			std::string uri;
 			uri += '/';
-			uri += nextChar();
 			while (pos < input.size())
 			{
 				char current = input[pos];
