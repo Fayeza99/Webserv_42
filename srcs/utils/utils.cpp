@@ -30,6 +30,9 @@ void printLocationConfig(const LocationConfig& loc, int indent = 0) {
 	std::cout << "Document Root: " << loc.document_root << std::endl;
 
 	printIndent(indent + 2);
+	std::cout << "Redirect: " << loc.redirect_uri << std::endl;
+
+	printIndent(indent + 2);
 	std::cout << "Default Files:" << std::endl;
 	for (const std::string& file : loc.default_files) {
 		printIndent(indent + 4);

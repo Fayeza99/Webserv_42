@@ -14,6 +14,8 @@ class LocationConfig
 public:
 	std::string uri;
 	std::string document_root;
+	bool redirect = false;
+	std::string redirect_uri;
 	std::vector<std::string> default_files;
 	std::set<std::string> supported_methods;
 	std::map<std::string, std::string> cgi_paths;

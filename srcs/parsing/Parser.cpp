@@ -165,6 +165,20 @@ LocationConfig Parser::parseLocation()
 				location.document_root = path;
 				eat(TokenType::SEMICOLON);
 			}
+			else if (directive == "return") {
+				std::string redirectURI;
+				if (currentToken.type == TokenType::STRING) {
+					redirectURI += currentToken.value;
+					eat(TokenType::STRING);
+				}
+				if (currentToken.type == TokenType::URI) {
+					path += currentToken.value;
+					eat(TokenType::URI);
+				}
+				location.redirect = true;
+				location.redirect_uri = redirectURI;
+				eat(TokenType::SEMICOLON);
+			}
 			else if (directive == "index")
 			{
 				if (currentToken.type == TokenType::STRING)
