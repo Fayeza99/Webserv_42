@@ -38,11 +38,13 @@ std::string Response::handle_delete(void) {
  */
 std::string Response::handle_redir(void) {
 	std::ostringstream response;
+	if (_request.getUri() == _location.redirect_uri)
+		return serve_static_file();
 	response << _request.getHttpVersion()
-			<< " 301 Moved Permanently\r\n"
-			<< "Location: " << _location.redirect_uri << "\r\n"
+			<< " 302 Found\r\n"
+			<< "Location: /" << _location.redirect_uri << "\r\n"
 			<< "Content-Length: 0\r\n\r\n";
-	std::cerr << "redirecting...\n";
+	// std::cout << "response: " << response.str() << "\n";
 	return response.str();
 }
 
@@ -152,7 +154,6 @@ std::string Response::serve_static_file() {
 	std::string uri = _request.getUri();
 	std::ostringstream response;
 
-	std::cerr << _request.getMethod() << std::endl;
 	if (!method_allowed() || _request.getMethod() != "GET") {
 		return get_error_response(405);
 	}
@@ -214,6 +215,7 @@ Response::Response(RequestParser &req, ClientState& clientState)
 	: _request(req), _clientState(clientState), _statuscode(200) {
 	_location = getLocation(_clientState.serverConfig, _request.getUri());
 	_documentRoot = _location.document_root;
+	std::cerr << "responding to: " << _request.getUri() << " redir: " << _location.redirect_uri << "\n";
 	if (!_location.redirect)
 		setFilePath();
 }

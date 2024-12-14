@@ -136,6 +136,8 @@ LocationConfig getLocation(const ServerConfig &serverConfig, const std::string &
 
 	std::string _uri;
 	std::string document_root;
+	std::string redirect_uri;
+	bool redirect;
 	std::vector<std::string> default_files;
 	std::set<std::string> supported_methods;
 	std::map<std::string, std::string> cgi_paths;
@@ -150,6 +152,8 @@ LocationConfig getLocation(const ServerConfig &serverConfig, const std::string &
 				default_files = loc.default_files;
 				supported_methods = loc.supported_methods;
 				cgi_paths = loc.cgi_paths;
+				redirect = loc.redirect;
+				redirect_uri = loc.redirect_uri;
 				bestMatchLength = loc.uri.size();
 			}
 		}
@@ -160,6 +164,8 @@ LocationConfig getLocation(const ServerConfig &serverConfig, const std::string &
 	bestMatchLocation.default_files = default_files;
 	bestMatchLocation.supported_methods = supported_methods;
 	bestMatchLocation.cgi_paths = cgi_paths;
+	bestMatchLocation.redirect = redirect;
+	bestMatchLocation.redirect_uri = redirect_uri;
 
 	return bestMatchLocation;
 }
