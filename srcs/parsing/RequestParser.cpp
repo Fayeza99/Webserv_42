@@ -12,13 +12,12 @@ RequestParser::RequestParser(const std::string &request) : _request(request)
 bool RequestParser::isValidMethod(const std::string &methodStr)
 {
 	static const std::set<std::string> valid_methods = {
-		"GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH", "CONNECT", "TRACE"};
+		"GET", "POST", "PUT", "DELETE"};
 	return valid_methods.find(methodStr) != valid_methods.end();
 }
 
 void RequestParser::parseRequest(const std::string &request)
 {
-	// std::cout << "request: " << request << std::endl;
 	std::istringstream request_stream(request);
 	std::string line;
 
@@ -50,7 +49,6 @@ void RequestParser::parseRequest(const std::string &request)
 
 	while (std::getline(request_stream, line))
 	{
-		// Check for end of headers
 		if (line == "\r" || line == "")
 		{
 			break;
@@ -69,7 +67,6 @@ void RequestParser::parseRequest(const std::string &request)
 			std::string header_value = trim(line.substr(colon + 1));
 			if (!header_name.empty() && !header_value.empty())
 			{
-				// Normalize header names to lower case for case-insensitivity
 				std::transform(header_name.begin(), header_name.end(), header_name.begin(), ::tolower);
 				headers[header_name] = header_value;
 			}
@@ -83,8 +80,6 @@ void RequestParser::parseRequest(const std::string &request)
 			throw std::runtime_error("Malformed header line: " + line);
 		}
 	}
-
-	// Handle Content-Length and parse the body
 	auto it = headers.find("content-length");
 	if (it != headers.end())
 	{
@@ -102,7 +97,6 @@ void RequestParser::parseRequest(const std::string &request)
 	}
 	else
 	{
-		// Read the body if any data is left (without Content-Length)
 		if (request_stream.peek() != EOF)
 		{
 			body = std::string(std::istreambuf_iterator<char>(request_stream), {});

@@ -19,7 +19,7 @@ private:
 	void eat(TokenType type);
 	void parseHostname(ServerConfig &server);
 	void parseListen(ServerConfig &server);
-	void parseErrorPages(ServerConfig &server);
+	void parseErrorPage(ServerConfig &server);
 	LocationConfig parseLocation();
 
 public:

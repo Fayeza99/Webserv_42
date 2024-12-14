@@ -18,8 +18,6 @@ std::string tokenTypeToString(TokenType type)
 		return "SEMICOLON";
 	case TokenType::EOF_TOKEN:
 		return "EOF_TOKEN";
-	case TokenType::SLASH:
-		return "SLASH";
 	case TokenType::SERVER:
 		return "SERVER";
 	case TokenType::LISTEN:
@@ -30,6 +28,8 @@ std::string tokenTypeToString(TokenType type)
 		return "LOCATION";
 	case TokenType::ALLOW:
 		return "ALLOW";
+	case TokenType::ERROR_PAGE:
+		return "ERROR_PAGE";
 	default:
 		return "UNKNOWN";
 	}
@@ -80,19 +80,32 @@ void Parser::parseListen(ServerConfig &server)
 	eat(TokenType::SEMICOLON);
 }
 
-void Parser::parseErrorPages(ServerConfig &server)
+void Parser::parseErrorPage(ServerConfig &server)
 {
-	eat(TokenType::STRING); // Assuming "error_pages" as token
-	while (currentToken.type == TokenType::NUMBER)
+	eat(TokenType::ERROR_PAGE);
+
+	if (currentToken.type != TokenType::NUMBER)
 	{
-		int code = std::stoi(currentToken.value);
-		eat(TokenType::NUMBER);
-		if (currentToken.type == TokenType::STRING)
-		{
-			server.error_pages[code] = currentToken.value;
-			eat(TokenType::STRING);
-		}
+		std::cerr << "Parsing error at position " << lexer.getPosition()
+				  << ": expected error code (NUMBER) after 'error_page', but found "
+				  << tokenTypeToString(currentToken.type) << std::endl;
+		throw std::runtime_error("Syntax error in 'error_page' directive.");
 	}
+	int error_code = std::stoi(currentToken.value);
+	eat(TokenType::NUMBER);
+
+	if (currentToken.type != TokenType::URI)
+	{
+		std::cerr << "Parsing error at position " << lexer.getPosition()
+				  << ": expected URI (STRING) after error code in 'error_page', but found "
+				  << tokenTypeToString(currentToken.type) << std::endl;
+		throw std::runtime_error("Syntax error in 'error_page' directive.");
+	}
+	std::string uri = currentToken.value;
+	eat(TokenType::URI);
+
+	server.error_pages[error_code] = uri;
+
 	eat(TokenType::SEMICOLON);
 }
 
@@ -101,16 +114,11 @@ LocationConfig Parser::parseLocation()
 	LocationConfig location;
 	eat(TokenType::LOCATION);
 
-	if (currentToken.type == TokenType::SLASH)
-	{
-		eat(TokenType::SLASH);
-
-		location.uri = "/";
-		if (currentToken.type == TokenType::STRING)
-		{
-			location.uri += currentToken.value;
-			eat(TokenType::STRING);
-		}
+	if (currentToken.type == TokenType::URI) {
+		location.uri = currentToken.value;
+		eat(TokenType::URI);
+	} else {
+		throw std::runtime_error("Expected URI starting with '/' in location block.");
 	}
 
 	eat(TokenType::OPEN_BRACE);
@@ -122,26 +130,16 @@ LocationConfig Parser::parseLocation()
 		{
 			std::string directive = currentToken.value;
 			eat(TokenType::STRING);
+			std::string path;
 			if (directive == "root")
 			{
-				std::string path;
-				if (currentToken.type == TokenType::SLASH)
-				{
-					path += "/";
-					eat(TokenType::SLASH);
+				if (currentToken.type == TokenType::STRING) {
+					path += currentToken.value;
+					eat(TokenType::STRING);
 				}
-				while (currentToken.type == TokenType::STRING || currentToken.type == TokenType::SLASH)
-				{
-					if (currentToken.type == TokenType::SLASH)
-					{
-						path += "/";
-						eat(TokenType::SLASH);
-					}
-					else
-					{
-						path += currentToken.value;
-						eat(TokenType::STRING);
-					}
+				if (currentToken.type == TokenType::URI) {
+					path += currentToken.value;
+					eat(TokenType::URI);
 				}
 				location.document_root = path;
 				eat(TokenType::SEMICOLON);
@@ -201,9 +199,9 @@ ServerConfig Parser::parseServer()
 		{
 			server.locations.push_back(parseLocation());
 		}
-		else if (currentToken.type == TokenType::STRING && currentToken.value == "error_pages")
+		else if (currentToken.type == TokenType::ERROR_PAGE)
 		{
-			parseErrorPages(server);
+			parseErrorPage(server);
 		}
 		else
 		{

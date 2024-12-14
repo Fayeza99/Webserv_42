@@ -193,7 +193,6 @@ void Response::setFilePath() {
 	}
 }
 
-
 Response::Response(RequestParser &req, ClientState& clientState)
 	: _request(req), _clientState(clientState), _statuscode(200) {
 	_location = getLocation(_clientState.serverConfig, _request.getUri());

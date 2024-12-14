@@ -51,12 +51,32 @@ Token Lexer::nextToken()
 	case ';':
 		return Token(TokenType::SEMICOLON);
 	case '/':
-		return Token(TokenType::SLASH);
+		{
+			std::string uri;
+			uri += '/';
+			uri += nextChar();
+			while (pos < input.size())
+			{
+				char current = input[pos];
+				std::cout << current << std::endl;
+				if (isalnum(current) || current == '/' || current == '.' || current == '_' || current == '-' || current == '?'
+					|| current == '=' || current == '&' || current == '%')
+				{
+					uri += nextChar();
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			return Token(TokenType::URI, uri);
+		}
 	default:
 		if (isalpha(c))
 		{
 			std::string word(1, c);
-			while ((isalnum(input[pos]) || input[pos] == '.') && pos < input.size())
+			while ((isalnum(input[pos]) || input[pos] == '.' || input[pos] == '_' ) && pos < input.size())
 			{
 				word += nextChar();
 			}
@@ -66,6 +86,8 @@ Token Lexer::nextToken()
 				return Token(TokenType::LISTEN);
 			if (word == "hostname")
 				return Token(TokenType::HOSTNAME);
+			if (word == "error_page")
+				return Token(TokenType::ERROR_PAGE);
 			if (word == "location")
 				return Token(TokenType::LOCATION);
 			return Token(TokenType::STRING, word);
@@ -79,8 +101,9 @@ Token Lexer::nextToken()
 			}
 			return Token(TokenType::NUMBER, number);
 		}
-		break;
+		else {
+			nextChar();
+			throw std::runtime_error(std::string("Unexpected character in input: ") + c);
+		}
 	}
-
-	throw std::runtime_error("Unexpected character in input");
 }
