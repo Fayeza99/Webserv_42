@@ -35,6 +35,7 @@ private:
 
 	std::string serve_static_file(void);
 	std::string handle_delete(void);
+	std::string handle_redir(void);
 	std::string get_error_response(const int errorCode);
 	bool method_allowed(void);
 	void setFilePath();

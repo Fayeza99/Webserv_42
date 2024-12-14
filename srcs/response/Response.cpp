@@ -6,6 +6,8 @@
  * @return std::string reponse in the form of string
  */
 std::string	Response::get_response(void) {
+	if (_location.redirect == true)
+		return handle_redir();
 	if (!method_allowed())
 		return get_error_response(405);
 	if (_request.getUri().find(".py") != std::string::npos)
@@ -27,6 +29,21 @@ std::string Response::handle_delete(void) {
 	if (!std::remove(_filePath.c_str()))
 		return (_request.getHttpVersion() + " 204 No Content\r\n\r\n");
 	return (get_error_response(403));
+}
+
+/**
+ * @brief Handles redirections
+ *
+ * @return std::string Response
+ */
+std::string Response::handle_redir(void) {
+	std::ostringstream response;
+	response << _request.getHttpVersion()
+			<< " 301 Moved Permanently\r\n"
+			<< "Location: " << _location.redirect_uri << "\r\n"
+			<< "Content-Length: 0\r\n\r\n";
+	std::cerr << "redirecting...\n";
+	return response.str();
 }
 
 /**
@@ -133,7 +150,9 @@ std::string Response::get_error_response(const int errorCode) {
  */
 std::string Response::serve_static_file() {
 	std::string uri = _request.getUri();
+	std::ostringstream response;
 
+	std::cerr << _request.getMethod() << std::endl;
 	if (!method_allowed() || _request.getMethod() != "GET") {
 		return get_error_response(405);
 	}
@@ -167,7 +186,6 @@ std::string Response::serve_static_file() {
 
 	std::string contentType = get_content_type(resolvedFilePath);
 
-	std::ostringstream response;
 	response	<< _request.getHttpVersion() << " 200 OK\r\n"
 				<< "Content-Type: " << contentType << "\r\n"
 				<< "Content-Length: " << body.size() << "\r\n"
@@ -196,7 +214,8 @@ Response::Response(RequestParser &req, ClientState& clientState)
 	: _request(req), _clientState(clientState), _statuscode(200) {
 	_location = getLocation(_clientState.serverConfig, _request.getUri());
 	_documentRoot = _location.document_root;
-	setFilePath();
+	if (!_location.redirect)
+		setFilePath();
 }
 
 Response::~Response() {
