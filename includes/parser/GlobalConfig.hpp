@@ -14,6 +14,7 @@ class LocationConfig
 public:
 	std::string uri;
 	std::string document_root;
+	bool autoIndex;
 	bool redirect = false;
 	std::string redirect_uri;
 	std::vector<std::string> default_files;

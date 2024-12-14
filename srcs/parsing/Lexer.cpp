@@ -84,8 +84,9 @@ Token Lexer::nextToken()
 				return Token(TokenType::HOSTNAME);
 			if (word == "error_page")
 				return Token(TokenType::ERROR_PAGE);
-			if (word == "autoindex")
+			if (word == "autoindex"){
 				return Token(TokenType::AUTOINDEX);
+			}
 			if (word == "location")
 				return Token(TokenType::LOCATION);
 			return Token(TokenType::STRING, word);

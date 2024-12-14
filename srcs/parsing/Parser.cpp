@@ -117,7 +117,7 @@ void Parser::parseAutoIndex(ServerConfig &server) {
 		std::cerr << "Parsing error at position " << lexer.getPosition()
 				  << ": expected on/off (String) after 'autoindex', but found "
 				  << tokenTypeToString(currentToken.type) << std::endl;
-		throw std::runtime_error("Syntax error in 'error_page' directive.");
+		throw std::runtime_error("Syntax error in 'autoindex' directive.");
 	}
 
 	if (currentToken.value == "on") {
@@ -133,6 +133,7 @@ void Parser::parseAutoIndex(ServerConfig &server) {
 LocationConfig Parser::parseLocation()
 {
 	LocationConfig location;
+	location.autoIndex = false;
 	eat(TokenType::LOCATION);
 
 	if (currentToken.type == TokenType::URI) {
@@ -146,11 +147,11 @@ LocationConfig Parser::parseLocation()
 
 	while (currentToken.type != TokenType::CLOSE_BRACE)
 	{
-
-		if (currentToken.type == TokenType::STRING)
+		if (currentToken.type == TokenType::STRING || currentToken.type == TokenType::AUTOINDEX)
 		{
 			std::string directive = currentToken.value;
-			eat(TokenType::STRING);
+			if (currentToken.type == TokenType::STRING)
+				eat(TokenType::STRING);
 			std::string path;
 			if (directive == "root")
 			{
@@ -177,6 +178,21 @@ LocationConfig Parser::parseLocation()
 				}
 				location.redirect = true;
 				location.redirect_uri = redirectURI;
+				eat(TokenType::SEMICOLON);
+			} else if (currentToken.type == TokenType::AUTOINDEX) {
+				eat(TokenType::AUTOINDEX);
+				if ((currentToken.type != TokenType::STRING) || (currentToken.value != "on" && currentToken.value != "off")) {
+					std::cerr << "Parsing error at position " << lexer.getPosition()
+							  << ": expected on/off (String) after 'autoindex', but found "
+							  << tokenTypeToString(currentToken.type) << std::endl;
+					throw std::runtime_error("Syntax error in 'location (autoindex)' directive.");
+				}
+				if (currentToken.value == "on") {
+					location.autoIndex = true;
+				} else {
+					location.autoIndex = false;
+				}
+				eat(TokenType::STRING);
 				eat(TokenType::SEMICOLON);
 			}
 			else if (directive == "index")
