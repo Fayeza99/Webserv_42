@@ -20,6 +20,7 @@ enum class TokenType
 	SERVER,
 	LISTEN,
 	ERROR_PAGE,
+	AUTOINDEX,
 	URI,
 	HOSTNAME,
 	LOCATION,

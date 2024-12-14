@@ -20,6 +20,7 @@ private:
 	void parseHostname(ServerConfig &server);
 	void parseListen(ServerConfig &server);
 	void parseErrorPage(ServerConfig &server);
+	void parseAutoIndex(ServerConfig &server);
 	LocationConfig parseLocation();
 
 public:

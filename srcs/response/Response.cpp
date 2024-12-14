@@ -146,16 +146,16 @@ std::string Response::serve_static_file() {
 
 	std::string resolvedFilePath(resolvedPath);
 
-	char resolvedDocRoot[PATH_MAX];
-	if (realpath(_documentRoot.c_str(), resolvedDocRoot) == NULL) {
-		std::cerr << "Failed to resolve document root: " << _documentRoot << std::endl;
-		return get_error_response(500);
-	}
+	// char resolvedDocRoot[PATH_MAX];
+	// if (realpath(_documentRoot.c_str(), resolvedDocRoot) == NULL) {
+	// 	std::cerr << "Failed to resolve document root: " << _documentRoot << std::endl;
+	// 	return get_error_response(500);
+	// }
 
-	std::string resolvedDocRootStr(resolvedDocRoot);
-	if (resolvedFilePath.find(resolvedDocRootStr) != 0) {
-		return get_error_response(403);
-	}
+	// std::string resolvedDocRootStr(resolvedDocRoot);
+	// if (resolvedFilePath.find(resolvedDocRootStr) != 0) {
+	// 	return get_error_response(403);
+	// }
 
 	std::ifstream file(resolvedFilePath.c_str(), std::ios::in | std::ios::binary);
 	if (!file.is_open()) {

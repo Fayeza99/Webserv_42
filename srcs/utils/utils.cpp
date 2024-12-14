@@ -59,6 +59,9 @@ void printServerConfig(const ServerConfig& server, int indent = 0) {
 	std::cout << "Listen Port: " << server.listen_port << std::endl;
 
 	printIndent(indent + 2);
+	std::cout << "AutoIndex: " << server.autoIndex << std::endl;
+
+	printIndent(indent + 2);
 	std::cout << "Hostnames:" << std::endl;
 	for (const std::string& hostname : server.hostnames) {
 		printIndent(indent + 4);
@@ -137,6 +140,7 @@ LocationConfig getLocation(const ServerConfig &serverConfig, const std::string &
 	// choose the location from the config file, that fits the request best
 	for (const LocationConfig &loc : serverConfig.locations) {
 		if (uri.compare(0, loc.uri.size(), loc.uri) == 0) {
+
 			if (loc.uri.size() > bestMatchLength) {
 				_uri = loc.uri;
 				document_root = loc.document_root;
