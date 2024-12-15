@@ -1,1 +1,0 @@
-ples delet meh
