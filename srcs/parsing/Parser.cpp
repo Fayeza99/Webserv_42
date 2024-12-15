@@ -96,17 +96,24 @@ void Parser::parseErrorPage(ServerConfig &server)
 	int error_code = std::stoi(currentToken.value);
 	eat(TokenType::NUMBER);
 
-	if (currentToken.type != TokenType::URI)
+	std::string errorPageUri;
+	if (currentToken.type != TokenType::URI && currentToken.type != TokenType::STRING)
 	{
 		std::cerr << "Parsing error at position " << lexer.getPosition()
 				  << ": expected URI (STRING) after error code in 'error_page', but found "
 				  << tokenTypeToString(currentToken.type) << std::endl;
 		throw std::runtime_error("Syntax error in 'error_page' directive.");
 	}
-	std::string uri = currentToken.value;
-	eat(TokenType::URI);
+	if (currentToken.type == TokenType::STRING) {
+		errorPageUri += currentToken.value;
+		eat(TokenType::STRING);
+	}
+	if (currentToken.type == TokenType::URI) {
+		errorPageUri += currentToken.value;
+		eat(TokenType::URI);
+	}
 
-	server.error_pages[error_code] = uri;
+	server.error_pages[error_code] = errorPageUri;
 
 	eat(TokenType::SEMICOLON);
 }

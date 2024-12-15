@@ -104,6 +104,8 @@ std::string Response::get_error_response(const int errorCode) {
 	std::string errorMessage;
 	std::string errorFilePath;
 
+	std::map<int, std::string> default_error_pages = _clientState.serverConfig.error_pages;
+
 	switch (errorCode)
 	{
 	case 403:
@@ -126,6 +128,15 @@ std::string Response::get_error_response(const int errorCode) {
 		errorMessage = " 500 Internal Server Error\r\n";
 		errorFilePath = "www/error/500.html";
 		break;
+	}
+
+	auto it = default_error_pages.find(errorCode);
+	if (it != default_error_pages.end()) {
+		std::string customErrorPath = it->second;
+		char resolvedPath[PATH_MAX];
+		if (realpath(customErrorPath.c_str(), resolvedPath) != NULL) {
+			errorFilePath = customErrorPath;
+		}
 	}
 
 	char resolvedPath[PATH_MAX];
