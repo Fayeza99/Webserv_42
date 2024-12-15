@@ -41,10 +41,9 @@ std::string Response::handle_redir(void) {
 	if (_request.getUri() == _location.redirect_uri)
 		return serve_static_file();
 	response << _request.getHttpVersion()
-			<< " 302 Found\r\n"
-			<< "Location: /" << _location.redirect_uri << "\r\n"
-			<< "Content-Length: 0\r\n\r\n";
-	// std::cout << "response: " << response.str() << "\n";
+			 << " 302 Found\r\n"
+			 << "Location: " << _location.redirect_uri << "\r\n"
+			 << "Connection: close\r\n\r\n";
 	return response.str();
 }
 
@@ -215,7 +214,6 @@ Response::Response(RequestParser &req, ClientState& clientState)
 	: _request(req), _clientState(clientState), _statuscode(200) {
 	_location = getLocation(_clientState.serverConfig, _request.getUri());
 	_documentRoot = _location.document_root;
-	std::cerr << "responding to: " << _request.getUri() << " redir: " << _location.redirect_uri << "\n";
 	if (!_location.redirect)
 		setFilePath();
 }
