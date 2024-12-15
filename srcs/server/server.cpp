@@ -28,14 +28,40 @@ void Server::setNonBlocking(int fd) {
 }
 
 /**
- * @brief It sets up the server by:
- * 1. creating a socket
- * 2. Set socket options
- * 3. Configure server addres structure
- * 4. Bind to all available interfaces (0.0.0.0)
- * 5. Bind the socket to the specified port
- * 6. Start listenting for incoming connections
+ * @brief Initializes and configures server sockets using kqueue.
  *
+ * The `setup` function is responsible for initializing the kqueue event notification
+ * interface and setting up server sockets based on the provided server configurations.
+ * For each `ServerConfig` in the `serverConfigs` collection, it performs the following steps:
+ *
+ * 1. Creates a non-blocking TCP socket.
+ * 2. Sets socket options to allow address reuse.
+ * 3. Binds the socket to the specified port on all available network interfaces.
+ * 4. Marks the socket as a passive socket to accept incoming connections.
+ * 5. Registers the socket with kqueue to monitor for read events, indicating incoming
+ *    connection requests.
+ * 6. Stores the server socket and its configuration in the `serverSockets` map.
+ * 7. Logs a message indicating that the server is listening on the specified port.
+ *
+ * @throws std::runtime_error
+ *   - If kqueue creation fails.
+ *   - If socket creation fails.
+ *   - If setting socket options fails.
+ *   - If binding the socket fails.
+ *   - If marking the socket as passive fails.
+ *   - If registering the socket with kqueue fails.
+ *
+ * @note
+ * - Assumes that `serverConfigs` is a member variable containing multiple `ServerConfig`
+ *   instances, each specifying configuration details for a server (e.g., listening port).
+ * - The `serverSockets` member is a map that associates each server socket with its
+ *   corresponding `ServerConfig`, facilitating easy retrieval and management.
+ * - The `setNonBlocking(int fd)` member function configures the given file descriptor
+ *   to operate in non-blocking mode, essential for efficient event-driven I/O.
+ * - Utilizes the kqueue event notification system for scalable and efficient monitoring
+ *   of multiple file descriptors.
+ *
+ * @see setNonBlocking(int), ServerConfig
  */
 void Server::setup() {
 	kq = kqueue();
@@ -234,12 +260,17 @@ void Server::handleWrite(int clientSocket) {
 }
 
 /**
- * @brief Determines the type of event and delegates handling to the appropriate functions
+ * @brief Processes a single event retrieved from the kqueue event loop.
  *
- * Handles any errors associated with the events
- * Determines whether the event is a read or a write event and calls the corresponding handler
+ * The `processEvent` function handles incoming events detected by the kqueue event notification
+ * system. It determines the type of event (read or write) and the associated file descriptor,
+ * then delegates the handling to the appropriate member functions (`handleAccept`, `handleRead`,
+ * or `handleWrite`). Additionally, it manages error events by logging relevant error messages
+ * and performing necessary cleanup.
  *
- * @param event
+ * @param event A reference to a `kevent` structure representing the event to be processed.
+ *
+ * @see handleAccept(int), handleRead(int), handleWrite(int), removeClient(int)
  */
 void Server::processEvent(struct kevent& event) {
 	int fd = static_cast<int>(event.ident);

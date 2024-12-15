@@ -145,9 +145,28 @@ std::string Response::get_error_response(const int errorCode) {
 }
 
 /**
- * @brief Servers static files
+ * @brief Serves a static file in response to an HTTP GET request.
  *
- * @return std::string Response in the form of string
+ * This function handles HTTP GET requests by locating and serving the requested static file
+ * from the server's document root. It performs the following operations:
+ * - Validates that the HTTP method is allowed and is specifically a GET request.
+ * - Resolves the absolute path of the requested file to prevent directory traversal attacks.
+ * - Ensures that the resolved file path is within the server's document root.
+ * - Opens and reads the file content into memory.
+ * - Determines the appropriate MIME type based on the file's extension.
+ * - Constructs and returns a complete HTTP response with the file's content.
+ *
+ * If any validation fails or an error occurs during file access, the function returns an
+ * appropriate HTTP error response (e.g., 403 Forbidden, 404 Not Found, 405 Method Not Allowed).
+ *
+ * @return std::string A complete HTTP response string, including status line, headers, and body.
+ *
+ * @note
+ * - This function assumes that `_filePath` and `_documentRoot` are properly set before invocation.
+ * - The function uses `realpath` to resolve absolute paths, which can fail if the file does not exist
+ *   or if there are insufficient permissions.
+ *
+ * @see get_error_response(int), get_content_type(const std::string&), method_allowed()
  */
 std::string Response::serve_static_file() {
 	std::string uri = _request.getUri();
@@ -164,16 +183,16 @@ std::string Response::serve_static_file() {
 
 	std::string resolvedFilePath(resolvedPath);
 
-	// char resolvedDocRoot[PATH_MAX];
-	// if (realpath(_documentRoot.c_str(), resolvedDocRoot) == NULL) {
-	// 	std::cerr << "Failed to resolve document root: " << _documentRoot << std::endl;
-	// 	return get_error_response(500);
-	// }
+	char resolvedDocRoot[PATH_MAX];
+	if (realpath(_documentRoot.c_str(), resolvedDocRoot) == NULL) {
+		std::cerr << "Failed to resolve document root: " << _documentRoot << std::endl;
+		return get_error_response(500);
+	}
 
-	// std::string resolvedDocRootStr(resolvedDocRoot);
-	// if (resolvedFilePath.find(resolvedDocRootStr) != 0) {
-	// 	return get_error_response(403);
-	// }
+	std::string resolvedDocRootStr(resolvedDocRoot);
+	if (resolvedFilePath.find(resolvedDocRootStr) != 0) {
+		return get_error_response(403);
+	}
 
 	std::ifstream file(resolvedFilePath.c_str(), std::ios::in | std::ios::binary);
 	if (!file.is_open()) {
