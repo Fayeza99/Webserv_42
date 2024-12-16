@@ -22,7 +22,7 @@ response = f"""
     <h1>POST Request Received</h1>
     <p><strong>Name:</strong> {name}</p>
     <p><strong>Message:</strong> {message}</p>
-    <a href="/form.html">Go Back</a>
+    <a href="/">Go Back</a>
 </body>
 </html>
 """
