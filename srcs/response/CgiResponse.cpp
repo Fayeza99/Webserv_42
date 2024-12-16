@@ -14,13 +14,13 @@ std::string	Response::exec_script() {
 
 	// in_pipe:		parent writes request body to [1], script reads it from [0]
 	// out_pipe:	script writes full response to [1], parent reads it from [0] and returns to server
-	if (pipe(_clientState.cgiHandler.pipe_in) == -1 || pipe(_clientState.cgiHandler.pipe_out) == -1)
+	if (pipe(_clientState.cgiStatus.pipe_in) == -1 || pipe(_clientState.cgiStatus.pipe_out) == -1)
 		return (get_error_response(500));
 
-	_clientState.cgiHandler.pid = fork();
-	if (_clientState.cgiHandler.pid == 0) {
+	_clientState.cgiStatus.pid = fork();
+	if (_clientState.cgiStatus.pid == 0) {
 		cgi_child();
-	} else if (_clientState.cgiHandler.pid > 0) {
+	} else if (_clientState.cgiStatus.pid > 0) {
 		return (cgi_parent());
 	}
 	return (get_error_response(500));
@@ -33,12 +33,12 @@ std::string	Response::exec_script() {
 void Response::cgi_child(void) {
 	std::string	script_name = _filePath.substr(_filePath.find_last_of("/") + 1);
 
-	close(_clientState.cgiHandler.pipe_in[1]);//child doesnt write request body
-	close(_clientState.cgiHandler.pipe_out[0]);//child doesnt read its own output (duh)
-	if (dup2(_clientState.cgiHandler.pipe_in[0], STDIN_FILENO) == -1 || dup2(_clientState.cgiHandler.pipe_out[1], STDOUT_FILENO) == -1)
+	close(_clientState.cgiStatus.pipe_in[1]);//child doesnt write request body
+	close(_clientState.cgiStatus.pipe_out[0]);//child doesnt read its own output (duh)
+	if (dup2(_clientState.cgiStatus.pipe_in[0], STDIN_FILENO) == -1 || dup2(_clientState.cgiStatus.pipe_out[1], STDOUT_FILENO) == -1)
 		exit(1);
-	close(_clientState.cgiHandler.pipe_in[0]);//dup successful, fds no longer needed
-	close(_clientState.cgiHandler.pipe_out[1]);//now acessible through STDIN and STDOUT
+	close(_clientState.cgiStatus.pipe_in[0]);//dup successful, fds no longer needed
+	close(_clientState.cgiStatus.pipe_out[1]);//now acessible through STDIN and STDOUT
 
 	if (chdir((_filePath.substr(0, _filePath.find_last_of("/"))).c_str()) == -1)
 		exit(1);
@@ -59,22 +59,22 @@ std::string Response::cgi_parent(void) {
 	char				buffer[BUFFER_SIZE];
 	size_t				bytes_read = 1;
 
-	close(_clientState.cgiHandler.pipe_in[0]);//parent doesnt read the request body
-	close(_clientState.cgiHandler.pipe_out[1]);//parent doesnt have the response to write here
+	close(_clientState.cgiStatus.pipe_in[0]);//parent doesnt read the request body
+	close(_clientState.cgiStatus.pipe_out[1]);//parent doesnt have the response to write here
 	if (!_request.getBody().empty()) {
-		if (write(_clientState.cgiHandler.pipe_in[1], _request.getBody().c_str(), _request.getBody().size()) == -1)
+		if (write(_clientState.cgiStatus.pipe_in[1], _request.getBody().c_str(), _request.getBody().size()) == -1)
 			std::cerr << "write failed\n";
 	}
 	while (bytes_read > 0) {
-		bytes_read = read(_clientState.cgiHandler.pipe_out[0], buffer, sizeof(buffer));
+		bytes_read = read(_clientState.cgiStatus.pipe_out[0], buffer, sizeof(buffer));
 		buffer[bytes_read] = '\0';
 		response << buffer;
 	}
 	// std::cerr << "parent finished reading from pipe\n";
-	close(_clientState.cgiHandler.pipe_in[1]);//writitng to script input finished
-	close(_clientState.cgiHandler.pipe_out[0]);//reading response also finished
-	waitpid(_clientState.cgiHandler.pid, NULL, 0);
-	_clientState.cgiHandler.cgi_completed = true;
+	close(_clientState.cgiStatus.pipe_in[1]);//writitng to script input finished
+	close(_clientState.cgiStatus.pipe_out[0]);//reading response also finished
+	waitpid(_clientState.cgiStatus.pid, NULL, 0);
+	_clientState.cgiStatus.cgi_completed = true;
 	return (_request.getHttpVersion() + " 200 OK\r\n" + response.str());
 }
 
