@@ -29,8 +29,8 @@ public:
 
 private:
 	std::string exec_script(void);
-	std::string cgi_parent(int in_pipe[2], int out_pipe[2], pid_t pid);
-	void cgi_child(int in_pipe[2], int out_pipe[2]);
+	std::string cgi_parent(void);
+	void cgi_child(void);
 	void set_env(void);
 
 	std::string serve_static_file(void);
