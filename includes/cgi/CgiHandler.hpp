@@ -3,6 +3,12 @@
 #include "RequestParser.hpp"
 #include "ClientState.hpp"
 
+#include <string>
+#include <map>
+#include <vector>
+#include <unistd.h>
+#include <sys/types.h>
+
 class CgiHandler {
 	private:
 		RequestParser& request;
