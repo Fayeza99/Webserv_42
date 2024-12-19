@@ -35,6 +35,7 @@ class Server {
 		void checkTimeouts();
 		void registerEvent(int fd, int filter, short flags);
 		void processEvent(struct kevent& event);
+		void createServerSocket(ServerConfig &config);
 
 		std::map<int, ClientState> clients;
 

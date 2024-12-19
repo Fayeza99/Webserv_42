@@ -28,40 +28,24 @@ void Server::setNonBlocking(int fd) {
 }
 
 /**
- * @brief Initializes and configures server sockets using kqueue.
+ * @brief Initializes the server by setting up the event notification system and creating server sockets.
  *
- * The `setup` function is responsible for initializing the kqueue event notification
- * interface and setting up server sockets based on the provided server configurations.
- * For each `ServerConfig` in the `serverConfigs` collection, it performs the following steps:
+ * The `setup` function performs essential initialization tasks required before the server can start accepting client connections. Specifically, it:
  *
- * 1. Creates a non-blocking TCP socket.
- * 2. Sets socket options to allow address reuse.
- * 3. Binds the socket to the specified port on all available network interfaces.
- * 4. Marks the socket as a passive socket to accept incoming connections.
- * 5. Registers the socket with kqueue to monitor for read events, indicating incoming
- *    connection requests.
- * 6. Stores the server socket and its configuration in the `serverSockets` map.
- * 7. Logs a message indicating that the server is listening on the specified port.
+ * 1. **Initializes the `kqueue` Event Notification Mechanism:**
+ *    - Creates a new kernel event queue using `kqueue()`.
+ *    - Throws a `std::runtime_error` if `kqueue` fails to initialize.
  *
- * @throws std::runtime_error
- *   - If kqueue creation fails.
- *   - If socket creation fails.
- *   - If setting socket options fails.
- *   - If binding the socket fails.
- *   - If marking the socket as passive fails.
- *   - If registering the socket with kqueue fails.
+ * 2. **Checks for Duplicate Server Configurations:**
+ *    - Iterates through the list of server configurations (`serverConfigs`) to identify duplicates based on listening ports and hostnames.
+ *    - For each unique configuration, invokes the `createServerSocket` method to establish a corresponding server socket.
  *
- * @note
- * - Assumes that `serverConfigs` is a member variable containing multiple `ServerConfig`
- *   instances, each specifying configuration details for a server (e.g., listening port).
- * - The `serverSockets` member is a map that associates each server socket with its
- *   corresponding `ServerConfig`, facilitating easy retrieval and management.
- * - The `setNonBlocking(int fd)` member function configures the given file descriptor
- *   to operate in non-blocking mode, essential for efficient event-driven I/O.
- * - Utilizes the kqueue event notification system for scalable and efficient monitoring
- *   of multiple file descriptors.
+ * **Notes:**
+ * - The current implementation compares each server configuration with itself, which might lead to all configurations being marked as duplicates. To rectify this, consider modifying the inner loop to skip self-comparisons.
+ * - Optimizing the duplicate detection logic can enhance performance, especially when dealing with a large number of server configurations.
  *
- * @see setNonBlocking(int), ServerConfig
+ * @see Server::createServerSocket
+ * @see kqueue()
  */
 void Server::setup() {
 	kq = kqueue();
@@ -69,49 +53,134 @@ void Server::setup() {
 		throw std::runtime_error("Failed to create kqueue");
 	}
 
-
-	for (const ServerConfig& config : serverConfigs) {
-
-		int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-		if (serverSocket == -1) {
-			throw std::runtime_error("Failed to create socket");
+	// Checking for duplicate Server if the server doesn't already exist then make a new one
+	bool serverDuplicate;
+	for (auto config1 = serverConfigs.begin(); config1 != serverConfigs.end(); ++config1)
+	{
+		serverDuplicate = false;
+		for (auto config2 = serverConfigs.begin(); config2 != serverConfigs.end(); ++config2)
+		{
+			if (config1 != config2 && config2->listen_port == config1->listen_port)
+			{
+				for (const std::string &server_name1 : config1->hostnames)
+				{
+					for (const std::string &server_name2 : config2->hostnames)
+					{
+						if (server_name1 == server_name2)
+						{
+							serverDuplicate = true;
+						}
+					}
+				}
+			}
 		}
-
-		setNonBlocking(serverSocket);
-
-		int opt = 1;
-		if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
-			close(serverSocket);
-			throw std::runtime_error("Failed to set socket options");
+		if (!serverDuplicate)
+		{
+			createServerSocket(*config1);
 		}
-
-		struct sockaddr_in serverAddr;
-		memset(&serverAddr, 0, sizeof(serverAddr));
-		serverAddr.sin_family = AF_INET;
-		serverAddr.sin_addr.s_addr = INADDR_ANY;
-		serverAddr.sin_port = htons(config.listen_port);
-
-		if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == -1) {
-			close(serverSocket);
-			throw std::runtime_error("Failed to bind socket");
-		}
-
-		if (listen(serverSocket, SOMAXCONN) == -1) {
-			close(serverSocket);
-			throw std::runtime_error("Failed to listen on socket");
-		}
-
-		struct kevent change;
-		EV_SET(&change, serverSocket, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, NULL);
-		if (kevent(kq, &change, 1, NULL, 0, NULL) == -1) {
-			close(serverSocket);
-			throw std::runtime_error("Failed to register server socket with kqueue");
-		}
-
-		serverSockets[serverSocket] = config;
-
-		std::cout << "Server is listening on port " << config.listen_port << std::endl;
 	}
+}
+
+/**
+ * @brief Create a new server with the provided server config
+ *
+ * @details
+ * ->Creating Socket:
+ *		- AF_INET stands for Address Family - Internet. It specifies that the socket will use the IPv4 addressing scheme.
+ *		- SOCK_STREAM is a socket type that provides reliable, ordered, and error-checked delivery of a stream of bytes. It is typically associated with the TCP (Transmission Control Protocol).
+ *
+ * -> Setting Socket Options:
+ *		- int opt: This variable will be used to enable a specific socket option 1 means set/on.
+ *		- SOL_SOCKET refers to the socket layer itself. It's used to set options that are generic to sockets, regardless of the underlying protocol.
+ *		- When developing and testing server applications, you might stop and restart the server
+ *		  multiple times in quick succession. Without SO_REUSEADDR, each restart could fail because the port
+ *		  remains occupied for a short period after the server stops. Enabling SO_REUSEADDR allows the new
+ *		  server instance to bind to the same port immediately, facilitating a smoother development workflow.
+ *
+ * -> Initializing Server Address
+ *		The `sockaddr_in` structure is used for handling internet addresses. The steps
+ *		involved in initializing this structure are as follows:
+ *
+ *		1. **Declaration and Initialization:**
+ *			- A `sockaddr_in` structure named `serverAddr` is declared to hold the
+ *			  server's address information.
+ *			- `memset` is used to zero out the entire structure to ensure that all
+ *			  fields are initialized to zero, preventing any unintended behavior.
+ *
+ *		2. **Setting the Address Family:**
+ *			- `sin_family` is set to `AF_INET`, indicating that the address family is
+ *			  IPv4. This constant specifies that the socket will use IPv4 addressing.
+ *
+ *		3. **Setting the IP Address:**
+ *			- `sin_addr.s_addr` is set to `INADDR_ANY`, which allows the server to accept
+ *			  connections on any of the host's IP addresses. This is useful when the server
+ *			  has multiple network interfaces or IP addresses.
+ *
+ *		4. **Setting the Port Number:**
+ *			- `sin_port` is set using `htons(config.listen_port)`. The `htons` function
+ *			  converts the port number from host byte order to network byte order, which is
+ *			  necessary for proper communication over the network.
+ *
+ * -> Binding the server socket
+ *		The `bind` function assigns the address specified by `serverAddr` to the socket
+ *		identified by `serverSocket`. This involves associating the socket with an IP
+ *		address and a port number, allowing the server to receive data sent to that
+ *		address and port.
+ *
+ */
+void Server::createServerSocket(ServerConfig &config)
+{
+	int serverSocket;
+
+	// Creating the Socket
+	serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+	if (serverSocket == -1)
+	{
+		throw std::runtime_error("Failed to create a server socket!");
+	}
+
+	// Setting the Socket FD as non-blocking
+	if (fcntl(serverSocket, F_SETFL, O_NONBLOCK) == -1)
+	{
+		throw std::runtime_error("Failed to set socket to non-blocking");
+	}
+
+	// Setting the server options
+	int opt = 1;
+	if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
+	{
+		close(serverSocket);
+		throw std::runtime_error("Failed to set socket options");
+	}
+
+	// Initializing Server Address
+	struct sockaddr_in serverAddr;
+	memset(&serverAddr, 0, sizeof(serverAddr));
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_addr.s_addr = INADDR_ANY;
+	serverAddr.sin_port = htons(config.listen_port);
+
+	// Binding the Server Socket
+	if (bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) == -1)
+	{
+		close(serverSocket);
+		throw std::runtime_error("Failed to bind socket");
+	}
+
+	// Enable Listening on the docket
+	if (listen(serverSocket, SOMAXCONN) == -1)
+	{
+		close(serverSocket);
+		throw std::runtime_error("Failed to listen on socket");
+	}
+
+	// Registering the socket fd with kq
+	registerEvent(serverSocket, EVFILT_READ, EV_ADD | EV_ENABLE);
+
+	// Adding the newly create server socket to the map
+	serverSockets[serverSocket] = config;
+
+	std::cout << "Server is listening on port " << config.listen_port << std::endl;
 }
 
 /**
