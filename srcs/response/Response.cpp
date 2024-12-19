@@ -271,13 +271,7 @@ Response::Response(RequestParser &req, ClientState& clientState)
 		setFilePath();
 }
 
-Response::~Response() {
-	_env.clear();
-	for (char* e : _environment) {
-		free(e);
-	}
-	_environment.clear();
-}
+Response::~Response() {}
 
 RequestParser&	Response::get_request(void) {return _request;}
 
