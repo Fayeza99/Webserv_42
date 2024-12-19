@@ -12,6 +12,8 @@ std::string	Response::get_response(void) {
 		return get_error_response(405);
 	if (_request.getUri().find(".py") != std::string::npos)
 		return exec_script();
+	// if (_request.isUpload())
+	// 	return (handle_upload());
 	if (_request.getMethod() == "DELETE")
 		return handle_delete();
 	return serve_static_file();
@@ -29,6 +31,31 @@ std::string Response::handle_delete(void) {
 	if (!std::remove(_filePath.c_str()))
 		return (_request.getHttpVersion() + " 204 No Content\r\n\r\n");
 	return (get_error_response(403));
+}
+
+/**
+ * @brief Handles file uploads.
+ *
+ * @return std::string Response
+ */
+std::string Response::handle_upload(void) {
+	std::ostringstream response;
+	bool success = false;
+	for (const FileUpload& file : _request.getUpload()) {
+		if (file.filename.empty())
+			continue ;
+		std::string openfile = _filePath + "/" + file.filename;
+		// std::cout << "FILE TO WRITE: " << openfile << std::endl;
+		std::ofstream outfile(openfile);
+		outfile << file.content << std::endl;
+		outfile.close();
+		success = true;
+	}
+	if (success) {
+		response << _request.getHttpVersion() << " 201 Created\r\nContent-Type: text/plain\r\n\r\nFile uploaded successfully.";
+		return (response.str());
+	}
+	return (get_error_response(500));
 }
 
 /**
@@ -230,7 +257,7 @@ std::string Response::serve_static_file() {
  */
 void Response::setFilePath() {
 	if (_request.getUri() == _location.uri) {
-		if (_location.default_files.size() < 1)
+		if (_location.default_files.size() < 1 && !_request.isUpload())
 			_filePath = "";
 		else
 			_filePath = _documentRoot + "/" + _location.default_files[0];
