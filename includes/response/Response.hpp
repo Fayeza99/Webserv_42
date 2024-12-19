@@ -9,9 +9,10 @@
 # include <sys/wait.h>
 # include <vector>
 # include <algorithm>
-# include "RequestParser.hpp"
 # include <fstream>
 # include <map>
+
+# include "RequestParser.hpp"
 # include "ClientState.hpp"
 # include "utils.hpp"
 
@@ -28,11 +29,6 @@ public:
 	int get_status(void);
 
 private:
-	std::string exec_script(void);
-	std::string cgi_parent(void);
-	void cgi_child(void);
-	void set_env(void);
-
 	std::string serve_static_file(void);
 	std::string handle_delete(void);
 	std::string handle_redir(void);
@@ -52,25 +48,10 @@ private:
 	std::map<std::string, std::string> _headers;
 	std::string _body;
 	int _statuscode;
-	std::vector<std::string> _env;
-	std::vector<char *> _environment;
-	// char **_argv;
-
 };
 
-void	test_1(ClientState& clientstate);
-void	test_2(ClientState& clientstate);
-void	test_3(ClientState& clientstate);
-void	test_4(ClientState& clientstate);
-void	test_5(ClientState& clientstate);
-
-// issues:
-// 		env completely missing
-// 		status codes not set
-// 		logging would be nice
-// 		non blocking io (fcntl or kqueue)
-// 		Break Down the CGI Processing into States?
-// 		match nginx response structure
-// 		chunked requests?
-// 		response headers?
-
+// void	test_1(ClientState& clientstate);
+// void	test_2(ClientState& clientstate);
+// void	test_3(ClientState& clientstate);
+// void	test_4(ClientState& clientstate);
+// void	test_5(ClientState& clientstate);

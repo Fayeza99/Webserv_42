@@ -10,10 +10,6 @@ std::string	Response::get_response(void) {
 		return handle_redir();
 	if (!method_allowed())
 		return get_error_response(405);
-	if (_request.getUri().find(".py") != std::string::npos)
-		return exec_script();
-	// if (_request.isUpload())
-	// 	return (handle_upload());
 	if (_request.getMethod() == "DELETE")
 		return handle_delete();
 	return serve_static_file();
