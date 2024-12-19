@@ -283,9 +283,16 @@ void Server::handleRead(int clientSocket) {
 		size_t pos = clients[clientSocket].requestBuffer.find("\r\n\r\n");
 		if (pos != std::string::npos) {
 			RequestParser	request(clients[clientSocket].requestBuffer);
-			Response		response(request, clients[clientSocket]);
-			clients[clientSocket].responseBuffer = response.get_response();
-			registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+			if (!request.isCgiRequest()) {
+				Response	response(request, clients[clientSocket]);
+				clients[clientSocket].responseBuffer = response.get_response();
+				registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+			}
+			else {
+				std::cerr << "CGI comming soon!" << std::endl;
+				std::cout << "Client " << clientSocket << " disconnected" << std::endl;
+				removeClient(clientSocket);
+			}
 		}
 	} else if (bytesRead == 0) {
 		std::cout << "Client " << clientSocket << " disconnected" << std::endl;
