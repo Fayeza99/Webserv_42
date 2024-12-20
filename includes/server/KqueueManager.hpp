@@ -15,7 +15,6 @@ class KqueueManager {
 	public:
 		KqueueManager();
 
-		void initializeKq();
 		void registerEvent(int fd, int filter, short flags);
 		void deregisterEvent(int fd);
 		int getKqFd();

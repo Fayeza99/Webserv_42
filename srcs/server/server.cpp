@@ -1,6 +1,6 @@
 #include "server.hpp"
 
-Server::Server() : kq(-1) {}
+Server::Server() {}
 
 /**
  * @brief this function calls the readConfigFile and
@@ -48,11 +48,6 @@ void Server::setNonBlocking(int fd) {
  * @see kqueue()
  */
 void Server::setup() {
-	kq = kqueue();
-	if (kq == -1) {
-		throw std::runtime_error("Failed to create kqueue");
-	}
-
 	// Checking for duplicate Server if the server doesn't already exist then make a new one
 	bool serverDuplicate;
 	for (auto config1 = serverConfigs.begin(); config1 != serverConfigs.end(); ++config1)
@@ -175,7 +170,7 @@ void Server::createServerSocket(ServerConfig &config)
 	}
 
 	// Registering the socket fd with kq
-	registerEvent(serverSocket, EVFILT_READ, EV_ADD | EV_ENABLE);
+	kqManager.registerEvent(serverSocket, EVFILT_READ, EV_ADD | EV_ENABLE);
 
 	// Adding the newly create server socket to the map
 	serverSockets[serverSocket] = config;
@@ -193,31 +188,9 @@ void Server::createServerSocket(ServerConfig &config)
  * @param clientSocket
  */
 void Server::removeClient(int clientSocket) {
-	struct kevent change;
-
-	EV_SET(&change, clientSocket, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-	if (kevent(this->kq, &change, 1, NULL, 0, NULL) == -1) {
-		std::cerr << "Failed to remove read event for client " << clientSocket << ": " << strerror(errno) << std::endl;
-	}
-
+	kqManager.deregisterEvent(clientSocket);
 	close(clientSocket);
-
 	clients.erase(clientSocket);
-}
-
-/**
- * @brief function to register or modify events with kqueue
- *
- * @param fd file descriptor to monitor.
- * @param filter event filter (EVFILT_READ, EVFILT_WRITE, etc.)
- * @param flags Action Flags (EV_ADD, EV_DELETE, EV_ENABLE, EV_DISABLE, EV_CLEAR)
- */
-void Server::registerEvent(int fd, int filter, short flags) {
-	struct kevent change;
-	EV_SET(&change, fd, filter, flags, 0, 0, nullptr);
-	if (kevent(kq, &change, 1, nullptr, 0, nullptr) == -1) {
-		std::cerr << "Failed to register event for fd " << fd << ": " << strerror(errno) << std::endl;
-	}
 }
 
 /**
@@ -246,7 +219,7 @@ void Server::handleAccept(int serverSocket) {
 		return;
 	}
 
-	registerEvent(clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
+	kqManager.registerEvent(clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
 
 	const ServerConfig& config = serverSockets[serverSocket];
 	clients.emplace(clientSocket, ClientState(config));
@@ -286,10 +259,12 @@ void Server::handleRead(int clientSocket) {
 			if (!request.isCgiRequest()) {
 				Response	response(request, clients[clientSocket]);
 				clients[clientSocket].responseBuffer = response.get_response();
-				registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+				kqManager.registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 			}
 			else {
-				CgiHandler cgiHandler(request, clientState);
+				// CgiHandler cgiHandler(request, clientState);
+				std::cout << "Client " << clientSocket << " disconnected" << std::endl;
+				removeClient(clientSocket);
 			}
 		}
 	} else if (bytesRead == 0) {
@@ -328,7 +303,7 @@ void Server::handleWrite(int clientSocket) {
 		}
 		if (response.empty()) {
 
-			registerEvent(clientSocket, EVFILT_WRITE, EV_DELETE);
+			kqManager.registerEvent(clientSocket, EVFILT_WRITE, EV_DELETE);
 		}
 	}
 }
@@ -409,7 +384,7 @@ void Server::run() {
 	struct kevent eventList[MAX_EVENTS];
 
 	while (true) {
-		int nev = kevent(kq, nullptr, 0, eventList, MAX_EVENTS, nullptr);
+		int nev = kevent(kqManager.getKqFd(), nullptr, 0, eventList, MAX_EVENTS, nullptr);
 		if (nev == -1) {
 			std::cerr << "kevent error: " << strerror(errno) << std::endl;
 			break;

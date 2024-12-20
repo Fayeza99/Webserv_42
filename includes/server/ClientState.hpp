@@ -7,6 +7,9 @@ struct ClientState {
 	std::string requestBuffer;
 	std::string responseBuffer;
 
+	time_t lastActive;
+	ServerConfig serverConfig;
+
 	std::string clientIPAddress;
 	int clientPort;
 
@@ -14,8 +17,6 @@ struct ClientState {
 	int cgiInputFd;
 	int cgiOutputFd;
 
-	time_t lastActive;
-	ServerConfig serverConfig;
 
 	ClientState()
 		: lastActive(std::time(NULL)), serverConfig(), isCgiRequest(false), cgiInputFd(-1), cgiOutputFd(-1) {}

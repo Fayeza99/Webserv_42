@@ -11,7 +11,7 @@ CgiHandler::CgiHandler(RequestParser& req, ClientState& cs) : request(req), clie
 }
 
 void CgiHandler::prepareEnvironment(void) {
-	std::string uri = _request.getUri();
+	std::string uri = request.getUri();
 	size_t queryPos = uri.find("?");
 
 	envVars["GATEWAY_INTERFACE"] = "CGI/1.1";
@@ -46,6 +46,7 @@ void CgiHandler::prepareEnvironment(void) {
 	auto headers = request.getHeaders();
 	for (const auto& header : headers) {
 		std::string key = header.first;
+		std::string upper_key = key;
 		for (auto &c : upper_key) { c = std::toupper((unsigned char)c); }
 		std::replace(upper_key.begin(), upper_key.end(), '-', '_');
 		envVars["HTTP_" + upper_key] = header.second;
@@ -75,13 +76,13 @@ void CgiHandler::executeCgi() {
 	if (cgiPid == 0) {
 		cgiChildProcess();
 	} else {
-		cgiParentProcess()
+		cgiParentProcess();
 	}
 }
 
 void CgiHandler::cgiChildProcess() {
-	dup2(cgiStdinpipe[0], STDIN_FILENO);
-	dup2(cgiStdoutpipe[1], STDOUT_FILENO);
+	dup2(cgiStdinPipe[0], STDIN_FILENO);
+	dup2(cgiStdoutPipe[1], STDOUT_FILENO);
 
 	close(cgiStdinPipe[1]);
 	close(cgiStdoutPipe[0]);
@@ -89,7 +90,7 @@ void CgiHandler::cgiChildProcess() {
 	if (chdir(scriptDirectoryPath.c_str()) == -1)
 		exit(1);
 
-	char **argv = {(char *)"/usr/bin/python3", (char *)scriptFileName.cstr()};
+	char *argv[] = {(char *)"/usr/bin/python3", (char *)scriptFileName.c_str()};
 	execve(scriptFileName.c_str(), argv, envp);
 
 	exit(1);

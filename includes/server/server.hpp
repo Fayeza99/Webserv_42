@@ -7,6 +7,7 @@
 #include "Response.hpp"
 #include "ClientState.hpp"
 #include "CgiHandler.hpp"
+#include "KqueueManager.hpp"
 
 #include <sys/types.h>
 #include <sys/event.h>
@@ -26,8 +27,7 @@ class Server {
 	private:
 		std::vector<ServerConfig> serverConfigs;
 		std::map<int, ServerConfig> serverSockets;
-		struct sockaddr_in serverAddr;
-		int kq;
+		KqueueManager kqManager;
 
 
 		void setNonBlocking(int fd);

@@ -1,8 +1,6 @@
 #include "KqueueManager.hpp"
 
-KqueueManager::KqueueManager() : kq(-1) {}
-
-void KqueueManager::initializeKq() {
+KqueueManager::KqueueManager() {
 	kq = kqueue();
 	if (kq == -1) {
 		throw std::runtime_error("Failed to initialize kqueue!");
