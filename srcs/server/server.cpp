@@ -289,9 +289,7 @@ void Server::handleRead(int clientSocket) {
 				registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 			}
 			else {
-				std::cerr << "CGI comming soon!" << std::endl;
-				std::cout << "Client " << clientSocket << " disconnected" << std::endl;
-				removeClient(clientSocket);
+				CgiHandler cgiHandler(request, clientState);
 			}
 		}
 	} else if (bytesRead == 0) {

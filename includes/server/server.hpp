@@ -1,10 +1,13 @@
 #pragma once
+
 #include "GlobalConfig.hpp"
 #include "utils.hpp"
 #include "Parser.hpp"
 #include "RequestParser.hpp"
 #include "Response.hpp"
 #include "ClientState.hpp"
+#include "CgiHandler.hpp"
+
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
