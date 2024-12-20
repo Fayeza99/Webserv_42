@@ -1,6 +1,6 @@
 #include "CgiHandler.hpp"
 
-CgiHandler::CgiHandler(RequestParser& req, ClientState& cs) : request(req), clientState(cs), cgiPid(-1) {
+CgiHandler::CgiHandler(RequestParser& req, ClientState& cs, KqueueManager& kq) : request(req), clientState(cs), kqManager(kq), cgiPid(-1) {
 	cgiStdinPipe[0] = -1;
 	cgiStdinPipe[1] = -1;
 	cgiStdoutPipe[0] = -1;
@@ -97,6 +97,17 @@ void CgiHandler::cgiChildProcess() {
 }
 
 void CgiHandler::cgiParentProcess() {
-		close(cgiStdinPipe[0]);
-		close(cgiStdoutPipe[1]);
+	close(cgiStdinPipe[0]);
+	close(cgiStdoutPipe[1]);
+
+	fcntl(cgiStdinPipe[1], F_SETFL, O_NONBLOCK);
+	fcntl(cgiStdoutPipe[0], F_SETFL, O_NONBLOCK);
+
+	clientState.cgiInputFd = cgiStdinPipe[1];
+	clientState.cgiOutputFd = cgiStdoutPipe[0];
+
+	if (!request.getBody().empty()) {
+		kqManager.registerEvent(clientState.cgiInputFd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+	}
+	kqManager.registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
 }

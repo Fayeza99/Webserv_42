@@ -2,17 +2,20 @@
 
 #include "RequestParser.hpp"
 #include "ClientState.hpp"
+#include "KqueueManager.hpp"
 
 #include <string>
 #include <map>
 #include <vector>
 #include <unistd.h>
 #include <sys/types.h>
+#include <fcntl.h>
 
 class CgiHandler {
 	private:
 		RequestParser& request;
 		ClientState& clientState;
+		KqueueManager& kqManager;
 
 		pid_t cgiPid;
 		int cgiStdinPipe[2];
@@ -27,8 +30,7 @@ class CgiHandler {
 		std::string scriptDirectoryPath;
 
 	public:
-		CgiHandler(RequestParser& req, ClientState& cs);
-		~CgiHandler();
+		CgiHandler(RequestParser& req, ClientState& cs, KqueueManager& kq);
 
 		void prepareEnvironment();
 		void executeCgi();

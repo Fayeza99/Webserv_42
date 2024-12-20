@@ -262,7 +262,10 @@ void Server::handleRead(int clientSocket) {
 				kqManager.registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 			}
 			else {
-				// CgiHandler cgiHandler(request, clientState);
+				CgiHandler cgiHandler(request, clients[clientSocket], kqManager);
+				cgiHandler.executeCgi();
+				// std::cout << "cgiInputFd: " << clients[clientSocket].cgiInputFd << std::endl;
+				// std::cout << "cgiOutputFd: " << clients[clientSocket].cgiOutputFd << std::endl;
 				std::cout << "Client " << clientSocket << " disconnected" << std::endl;
 				removeClient(clientSocket);
 			}
