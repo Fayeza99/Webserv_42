@@ -111,37 +111,37 @@
 //  * also sets request headers to env in correct format.
 //  * then copies vector to char **_environment.
 //  */
-void Response::set_env(void) {
-	std::string uri = _request.getUri();
-	size_t queryPos = uri.find("?");
-	_env.clear();
-	_environment.clear();
+// void Response::set_env(void) {
+// 	std::string uri = _request.getUri();
+// 	size_t queryPos = uri.find("?");
+// 	_env.clear();
+// 	_environment.clear();
 
-	_env.push_back("GATEWAY_INTERFACE=CGI/1.1");
-	_env.push_back("SERVER_PROTOCOL=HTTP/1.1");
-	_env.push_back("REQUEST_METHOD=" + _request.getMethod());
-	_env.push_back("SCRIPT_NAME=" + get_scriptname(uri));
-	_env.push_back("CONTENT_LENGTH=" + std::to_string(_request.getBody().length()));
-	if (queryPos != std::string::npos) {
-		_env.push_back("PATH_INFO=" + uri.substr(0, queryPos));
-		_env.push_back("QUERY_STRING=" + uri.substr(queryPos + 1));
-	} else {
-		_env.push_back("PATH_INFO=" + uri);
-		_env.push_back("QUERY_STRING=");
-	}
-	_env.push_back("SERVER_PORT=" + std::to_string(_clientState.serverConfig.listen_port));
-	_env.push_back("REMOTE_PORT=" + std::to_string(_clientState.clientPort));
-	_env.push_back("REMOTE_ADDR=" + _clientState.clientIPAddress);
+// 	_env.push_back("GATEWAY_INTERFACE=CGI/1.1");
+// 	_env.push_back("SERVER_PROTOCOL=HTTP/1.1");
+// 	_env.push_back("REQUEST_METHOD=" + _request.getMethod());
+// 	_env.push_back("SCRIPT_NAME=" + get_scriptname(uri));
+// 	_env.push_back("CONTENT_LENGTH=" + std::to_string(_request.getBody().length()));
+// 	if (queryPos != std::string::npos) {
+// 		_env.push_back("PATH_INFO=" + uri.substr(0, queryPos));
+// 		_env.push_back("QUERY_STRING=" + uri.substr(queryPos + 1));
+// 	} else {
+// 		_env.push_back("PATH_INFO=" + uri);
+// 		_env.push_back("QUERY_STRING=");
+// 	}
+// 	_env.push_back("SERVER_PORT=" + std::to_string(_clientState.serverConfig.listen_port));
+// 	_env.push_back("REMOTE_PORT=" + std::to_string(_clientState.clientPort));
+// 	_env.push_back("REMOTE_ADDR=" + _clientState.clientIPAddress);
 
-	auto headers = _request.getHeaders();
-	for (const auto& header : headers) {
-		_env.push_back(to_http_variable(header.first) + "=" + header.second);
-	}
+// 	auto headers = _request.getHeaders();
+// 	for (const auto& header : headers) {
+// 		_env.push_back(to_http_variable(header.first) + "=" + header.second);
+// 	}
 
-	// Convert _env to char**
-	for (const std::string& e : _env) {
-		char* envString = strdup(e.c_str());
-		_environment.push_back(envString);
-	}
-	_environment.push_back(nullptr);
-}
+// 	// Convert _env to char**
+// 	for (const std::string& e : _env) {
+// 		char* envString = strdup(e.c_str());
+// 		_environment.push_back(envString);
+// 	}
+// 	_environment.push_back(nullptr);
+// }
