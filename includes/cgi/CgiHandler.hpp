@@ -31,13 +31,16 @@ class CgiHandler {
 
 	public:
 		CgiHandler(RequestParser& req, ClientState& cs, KqueueManager& kq);
+		~CgiHandler();
 
 		void prepareEnvironment();
 		void executeCgi();
 		void cgiChildProcess();
 		void cgiParentProcess();
-		void writeToCgiStdin();
-		void readFromCgiStdout();
-		bool isCgiFinished();
+
 		void cleanup();
 };
+
+void writeToCgiStdin(ClientState& clientState, KqueueManager& kqManager);
+void readFromCgiStdout(ClientState& clientState, KqueueManager& kqManager);
+bool isCgiFinished(ClientState& clientState);

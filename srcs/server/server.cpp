@@ -9,7 +9,8 @@ Server::Server() {}
  *
  * @param configFilePath comes from the main argv[1]
  */
-void Server::configure(const std::string& configFilePath) {
+void Server::configure(const std::string &configFilePath)
+{
 	Parser parser(readConfigFile(configFilePath));
 	GlobalConfig globalConfig = parser.parse();
 	printGlobalConfig(globalConfig, 4);
@@ -21,8 +22,10 @@ void Server::configure(const std::string& configFilePath) {
  *
  * @param fd file descriptor of the socket
  */
-void Server::setNonBlocking(int fd) {
-	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1) {
+void Server::setNonBlocking(int fd)
+{
+	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
+	{
 		throw std::runtime_error("Failed to set socket to non-blocking");
 	}
 }
@@ -47,7 +50,8 @@ void Server::setNonBlocking(int fd) {
  * @see Server::createServerSocket
  * @see kqueue()
  */
-void Server::setup() {
+void Server::setup()
+{
 	// Checking for duplicate Server if the server doesn't already exist then make a new one
 	bool serverDuplicate;
 	for (auto config1 = serverConfigs.begin(); config1 != serverConfigs.end(); ++config1)
@@ -187,7 +191,8 @@ void Server::createServerSocket(ServerConfig &config)
  *
  * @param clientSocket
  */
-void Server::removeClient(int clientSocket) {
+void Server::removeClient(int clientSocket)
+{
 	kqManager.deregisterEvent(clientSocket);
 	close(clientSocket);
 	clients.erase(clientSocket);
@@ -201,19 +206,24 @@ void Server::removeClient(int clientSocket) {
  * Initializes a ClientState for tracking request and response data
  *
  */
-void Server::handleAccept(int serverSocket) {
+void Server::handleAccept(int serverSocket)
+{
 	struct sockaddr_in clientAddr;
 	socklen_t clientAddrLen = sizeof(clientAddr);
-	int clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &clientAddrLen);
+	int clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, &clientAddrLen);
 
-	if (clientSocket == -1) {
+	if (clientSocket == -1)
+	{
 		std::cerr << "Failed to accept connection: " << strerror(errno) << std::endl;
 		return;
 	}
 
-	try {
+	try
+	{
 		setNonBlocking(clientSocket);
-	} catch (const std::exception &e) {
+	}
+	catch (const std::exception &e)
+	{
 		std::cerr << "Failed to set client socket to non-blocking: " << e.what() << std::endl;
 		close(clientSocket);
 		return;
@@ -221,17 +231,17 @@ void Server::handleAccept(int serverSocket) {
 
 	kqManager.registerEvent(clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
 
-	const ServerConfig& config = serverSockets[serverSocket];
-	clients.emplace(clientSocket, ClientState(config));
+	const ServerConfig &config = serverSockets[serverSocket];
+	clients.emplace(clientSocket, ClientState(config, clientSocket));
 
 	std::string clientip(inet_ntoa(clientAddr.sin_addr));
 	clients[clientSocket].clientIPAddress = clientip;
 	clients[clientSocket].clientPort = ntohs(clientAddr.sin_port);
 
-	std::cout	<< "Accepted new connection from "
-				<< clients[clientSocket].clientIPAddress << ":"
-				<< clients[clientSocket].clientPort
-				<< ", socket " << clientSocket << std::endl;
+	std::cout << "Accepted new connection from "
+			  << clients[clientSocket].clientIPAddress << ":"
+			  << clients[clientSocket].clientPort
+			  << ", socket " << clientSocket << std::endl;
 }
 
 /**
@@ -244,36 +254,42 @@ void Server::handleAccept(int serverSocket) {
  *
  * @param clientSocket
  */
-void Server::handleRead(int clientSocket) {
+void Server::handleRead(int clientSocket)
+{
 	char buffer[4096];
 	ssize_t bytesRead = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
 
-	if (bytesRead > 0) {
+	if (bytesRead > 0)
+	{
 		buffer[bytesRead] = '\0';
 		clients[clientSocket].lastActive = time(nullptr);
 		clients[clientSocket].requestBuffer += buffer;
 
 		size_t pos = clients[clientSocket].requestBuffer.find("\r\n\r\n");
-		if (pos != std::string::npos) {
-			RequestParser	request(clients[clientSocket].requestBuffer);
-			if (!request.isCgiRequest()) {
-				Response	response(request, clients[clientSocket]);
+		if (pos != std::string::npos)
+		{
+			RequestParser request(clients[clientSocket].requestBuffer);
+			clients[clientSocket].request = &request;
+			if (!request.isCgiRequest())
+			{
+				Response response(request, clients[clientSocket]);
 				clients[clientSocket].responseBuffer = response.get_response();
 				kqManager.registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 			}
-			else {
+			else
+			{
 				CgiHandler cgiHandler(request, clients[clientSocket], kqManager);
 				cgiHandler.executeCgi();
-				// std::cout << "cgiInputFd: " << clients[clientSocket].cgiInputFd << std::endl;
-				// std::cout << "cgiOutputFd: " << clients[clientSocket].cgiOutputFd << std::endl;
-				std::cout << "Client " << clientSocket << " disconnected" << std::endl;
-				removeClient(clientSocket);
 			}
 		}
-	} else if (bytesRead == 0) {
+	}
+	else if (bytesRead == 0)
+	{
 		std::cout << "Client " << clientSocket << " disconnected" << std::endl;
 		removeClient(clientSocket);
-	} else {
+	}
+	else
+	{
 		std::cerr << "Read error on client " << clientSocket << ", removing client." << std::endl;
 		removeClient(clientSocket);
 	}
@@ -288,23 +304,33 @@ void Server::handleRead(int clientSocket) {
  *
  * @param clientSocket
  */
-void Server::handleWrite(int clientSocket) {
-	std::string& response = clients[clientSocket].responseBuffer;
-	if (!response.empty()) {
+void Server::handleWrite(int clientSocket)
+{
+	// std::cout << "ClientAA: " << clientSocket << std::endl;
+	std::string &response = clients[clientSocket].responseBuffer;
+	// std::cout << "ResponseAA: \n" << response << std::endl;
+	if (!response.empty())
+	{
 		ssize_t bytesSent = send(clientSocket, response.c_str(), response.size(), 0);
-		if (bytesSent > 0) {
+		if (bytesSent > 0)
+		{
 			response.erase(0, bytesSent);
 			clients[clientSocket].lastActive = time(nullptr);
-		} else if (bytesSent == 0) {
+		}
+		else if (bytesSent == 0)
+		{
 			std::cerr << "Client " << clientSocket << " disconnected during write." << std::endl;
 			removeClient(clientSocket);
 			return;
-		} else {
+		}
+		else
+		{
 			std::cerr << "Write error on client " << clientSocket << ", removing client." << std::endl;
 			removeClient(clientSocket);
 			return;
 		}
-		if (response.empty()) {
+		if (response.empty())
+		{
 
 			kqManager.registerEvent(clientSocket, EVFILT_WRITE, EV_DELETE);
 		}
@@ -324,32 +350,74 @@ void Server::handleWrite(int clientSocket) {
  *
  * @see handleAccept(int), handleRead(int), handleWrite(int), removeClient(int)
  */
-void Server::processEvent(struct kevent& event) {
+void Server::processEvent(struct kevent &event)
+{
 	int fd = static_cast<int>(event.ident);
 
-	if (event.flags & EV_ERROR) {
-		if (serverSockets.count(fd)) {
+	if (event.flags & EV_ERROR)
+	{
+		if (serverSockets.count(fd))
+		{
 			std::cerr << "Error on server socket: " << strerror(static_cast<int>(event.data)) << std::endl;
-		} else {
+		}
+		else
+		{
 			int clientSocket = static_cast<int>(event.ident);
 			std::cerr << "Error on client socket " << clientSocket << ": " << strerror(static_cast<int>(event.data)) << std::endl;
 			removeClient(clientSocket);
 		}
 		return;
 	}
-
-	if (event.filter == EVFILT_READ) {
-		if (serverSockets.count(fd)) {
+	else if (serverSockets.count(fd))
+	{
+		if (event.filter == EVFILT_READ)
+		{
 			handleAccept(fd);
-		} else {
-			handleRead(fd);
 		}
 	}
-
-	if (event.filter == EVFILT_WRITE) {
+	else if (clients.count(fd))
+	{
+		if (event.filter == EVFILT_READ)
+		{
+			handleRead(fd);
+		}
+		else if (event.filter == EVFILT_WRITE)
+		{
 			handleWrite(fd);
+		}
 	}
+	else
+	{
+		ClientState *client = findClientByPipeFd(fd);
 
+		if (!client)
+		{
+			std::cerr << "Unknown fd in processEvent: " << fd << std::endl;
+			return;
+		}
+
+		if (event.filter == EVFILT_READ)
+		{
+			readFromCgiStdout(*client, kqManager);
+		}
+		else if (event.filter == EVFILT_WRITE)
+		{
+			writeToCgiStdin(*client, kqManager);
+
+		}
+	}
+}
+
+ClientState *Server::findClientByPipeFd(int fd)
+{
+	for (auto &client : clients)
+	{
+		if (client.second.cgiInputFd == fd || client.second.cgiOutputFd == fd)
+		{
+			return &client.second;
+		}
+	}
+	return nullptr;
 }
 
 /**
@@ -359,17 +427,22 @@ void Server::processEvent(struct kevent& event) {
  * Safely iterates through the clients map, removing timed-out clients
  *
  */
-void Server::checkTimeouts() {
+void Server::checkTimeouts()
+{
 	time_t currentTime = time(nullptr);
 	const int TIMEOUT_DURATION = 30; // seconds
 
-	for (auto it = clients.begin(); it != clients.end();) {
-		if (currentTime - it->second.lastActive > TIMEOUT_DURATION) {
+	for (auto it = clients.begin(); it != clients.end();)
+	{
+		if (currentTime - it->second.lastActive > TIMEOUT_DURATION)
+		{
 			int clientSocket = it->first;
 			std::cout << "Client " << clientSocket << " timed out" << std::endl;
 			removeClient(clientSocket);
 			it = clients.erase(it);
-		} else {
+		}
+		else
+		{
 			++it;
 		}
 	}
@@ -382,17 +455,21 @@ void Server::checkTimeouts() {
  * Delegates each event to the processEvent function
  * Regularly cleans up inactive client connections
  */
-void Server::run() {
+void Server::run()
+{
 	const int MAX_EVENTS = 1024;
 	struct kevent eventList[MAX_EVENTS];
 
-	while (true) {
+	while (true)
+	{
 		int nev = kevent(kqManager.getKqFd(), nullptr, 0, eventList, MAX_EVENTS, nullptr);
-		if (nev == -1) {
+		if (nev == -1)
+		{
 			std::cerr << "kevent error: " << strerror(errno) << std::endl;
 			break;
 		}
-		for (int i = 0; i < nev; ++i) {
+		for (int i = 0; i < nev; ++i)
+		{
 			processEvent(eventList[i]);
 		}
 		checkTimeouts();

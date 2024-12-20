@@ -53,7 +53,7 @@
 //  * parent process of the cgi
 //  * write request body to script input
 //  * read response from STDOUT
-//  */
+// //  */
 // std::string Response::cgi_parent(void) {
 // 	std::ostringstream	response;
 // 	char				buffer[BUFFER_SIZE];

@@ -6,8 +6,8 @@
 
 RequestParser::RequestParser(const std::string &request) : _request(request)
 {
-	std::cout << "Parsing request:\n"
-			  << request << std::endl;
+	// std::cout << "Parsing request:\n"
+	// 		  << request << std::endl;
 	parseRequest(request);
 }
 

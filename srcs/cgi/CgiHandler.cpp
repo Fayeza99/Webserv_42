@@ -64,11 +64,13 @@ void CgiHandler::prepareEnvironment(void) {
 }
 
 void CgiHandler::executeCgi() {
+
 	if (pipe(cgiStdinPipe) == -1 || pipe(cgiStdoutPipe) == -1) {
 		throw std::runtime_error("Falied to create CGI pipes");
 	}
 
 	cgiPid = fork();
+	clientState.cgiPid = cgiPid;
 	if (cgiPid == -1) {
 		throw std::runtime_error("Failed to fork CGI process");
 	}
@@ -78,6 +80,7 @@ void CgiHandler::executeCgi() {
 	} else {
 		cgiParentProcess();
 	}
+
 }
 
 void CgiHandler::cgiChildProcess() {
@@ -87,11 +90,15 @@ void CgiHandler::cgiChildProcess() {
 	close(cgiStdinPipe[1]);
 	close(cgiStdoutPipe[0]);
 
-	if (chdir(scriptDirectoryPath.c_str()) == -1)
+	if (chdir(scriptDirectoryPath.c_str()) == -1) {
+		perror("chdir failed");
 		exit(1);
+	}
 
-	char *argv[] = {(char *)"/usr/bin/python3", (char *)scriptFileName.c_str()};
-	execve(scriptFileName.c_str(), argv, envp);
+
+	char *argv[] = {(char *)"/usr/bin/python3", (char *)scriptFileName.c_str(), NULL};
+	execve("/usr/bin/python3", argv, envp);
+
 
 	exit(1);
 }
@@ -111,3 +118,119 @@ void CgiHandler::cgiParentProcess() {
 	}
 	kqManager.registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
 }
+
+void writeToCgiStdin(ClientState& clientState, KqueueManager& kqManager) {
+	std::cout << "DEBUG: B " << std::endl;
+	if (clientState.cgiInputFd < 0) return;
+
+	if (clientState.request->getBody().empty()) {
+		std::cout << "DEBUG: C " << std::endl;
+		kqManager.registerEvent(clientState.cgiInputFd, EVFILT_WRITE, EV_DELETE);
+		close(clientState.cgiInputFd);
+		clientState.cgiInputFd = -1;
+		return;
+	}
+
+	const std::string &body = clientState.request->getBody();
+	ssize_t bytesSent = write(clientState.cgiInputFd, body.data(), body.size());
+
+	if (bytesSent > 0) {
+		std::cout << "DEBUG: D " << std::endl;
+		kqManager.registerEvent(clientState.cgiInputFd, EVFILT_WRITE, EV_DELETE);
+		close(clientState.cgiInputFd);
+		clientState.cgiInputFd = -1;
+	} else if (bytesSent == -1) {
+		std::cout << "DEBUG: E " << std::endl;
+		std::cerr << "Error Occurred while writing to cgi stdin" << std::endl;
+		kqManager.registerEvent(clientState.cgiInputFd, EVFILT_WRITE, EV_DELETE);
+		close(clientState.cgiInputFd);
+		clientState.cgiInputFd = -1;
+	}
+}
+
+bool isCgiFinished(ClientState& clientState) {
+
+	if (clientState.cgiPid <= 0) return true;
+	int status;
+	pid_t result = waitpid(clientState.cgiPid, &status, WNOHANG);
+	if (result == 0) {
+		// child still running
+		return false;
+	} else if (result == clientState.cgiPid) {
+		return true;
+	} else {
+		std::cerr << "Something went wrong with waitpid" << std::endl;
+		return true;
+	}
+}
+
+void readFromCgiStdout(ClientState& clientState, KqueueManager& kqManager) {
+	if (clientState.cgiOutputFd < 0) return;
+
+	char buffer[4096];
+	ssize_t bytesRead = read(clientState.cgiOutputFd, buffer, sizeof(buffer));
+
+	buffer[bytesRead] = '\0';
+
+	std::string response = "HTTP/1.1 200 OK\r\n";
+	response += buffer;
+
+
+	std::cout << "Size: " << response.size() << std::endl;
+
+	if (bytesRead > 0) {
+		clientState.responseBuffer = response;
+		std::cout << "ResponseBB: " << clientState.responseBuffer << std::endl;
+
+		kqManager.registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);
+		kqManager.registerEvent(clientState.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+
+	} else if (bytesRead == 0) {
+		kqManager.registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);
+		close(clientState.cgiOutputFd);
+		clientState.cgiOutputFd = -1;
+
+		if (!isCgiFinished(clientState)) {
+			std::cerr << "Something went wrong in CGI, not finished" << std::endl;
+		}
+	} else {
+		std::cerr << "Error Occurred while reading from cgi stdout" << std::endl;
+		kqManager.registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);
+		close(clientState.cgiOutputFd);
+		clientState.cgiOutputFd = -1;
+	}
+}
+
+
+
+void CgiHandler::cleanup() {
+	// Close any remaining open FDs
+	if (clientState.cgiInputFd >= 0) {
+		kqManager.registerEvent(clientState.cgiInputFd, EVFILT_WRITE, EV_DELETE);
+		close(clientState.cgiInputFd);
+		clientState.cgiInputFd = -1;
+	}
+
+	if (clientState.cgiOutputFd >= 0) {
+		kqManager.registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);
+		close(clientState.cgiOutputFd);
+		clientState.cgiOutputFd = -1;
+	}
+
+	// // Wait for child if not already done
+	// if (!isCgiFinished()) {
+	// 	int status;
+	// 	waitpid(cgiPid, &status, 0);
+	// }
+
+	cgiPid = -1;
+	envVars.clear();
+	envStrings.clear();
+	env.clear();
+	envp = nullptr;
+}
+
+CgiHandler::~CgiHandler() {
+	// cleanup();
+}
+

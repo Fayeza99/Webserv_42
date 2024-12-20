@@ -36,9 +36,9 @@ class Server {
 		void handleRead(int clientSocket);
 		void handleWrite(int clientSocket);
 		void checkTimeouts();
-		void registerEvent(int fd, int filter, short flags);
 		void processEvent(struct kevent& event);
 		void createServerSocket(ServerConfig &config);
+		ClientState* findClientByPipeFd(int fd);
 
 		std::map<int, ClientState> clients;
 
