@@ -270,16 +270,16 @@ void Server::handleRead(int clientSocket)
 		{
 			RequestParser request(clients[clientSocket].requestBuffer);
 			clients[clientSocket].request = &request;
-			if (!request.isCgiRequest())
+			clients[clientSocket].kqManager = &kqManager;
+			Response response(clients[clientSocket]);
+			if (request.isCgiRequest())
 			{
-				Response response(request, clients[clientSocket]);
-				clients[clientSocket].responseBuffer = response.get_response();
-				kqManager.registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+				response.executeCgi();
 			}
 			else
 			{
-				CgiHandler cgiHandler(request, clients[clientSocket], kqManager);
-				cgiHandler.executeCgi();
+				clients[clientSocket].responseBuffer = response.get_response();
+				kqManager.registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 			}
 		}
 	}

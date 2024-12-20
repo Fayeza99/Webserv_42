@@ -21,12 +21,13 @@
 
 class Response {
 public:
-	Response(RequestParser &req, ClientState& clientState);
+	Response(ClientState& clientState);
 	~Response();
 
 	std::string get_response(void);
 	RequestParser& get_request(void);
 	int get_status(void);
+	void executeCgi();
 
 private:
 	std::string serve_static_file(void);
@@ -34,21 +35,43 @@ private:
 	std::string handle_redir(void);
 	std::string handle_upload(void);
 	std::string get_error_response(const int errorCode);
+	std::string get_content_type(const std::string& path) const;
 	bool method_allowed(void);
 	void setFilePath();
-	std::string get_content_type(const std::string& path) const;
 
 	RequestParser& _request;
-	std::string _response;
 	ClientState& _clientState;
+	KqueueManager& _kqManager;
 	LocationConfig _location;
+	std::string _response;
 	std::string _documentRoot;
 	std::string _filePath;
+
+	void prepareEnvironment();
+	void cgiChildProcess();
+	void cgiParentProcess();
+
+	pid_t cgiPid;
+	int cgiStdinPipe[2];
+	int cgiStdoutPipe[2];
+
+	std::map<std::string, std::string> envVars;
+	std::vector<std::string> envStrings;
+	std::vector<char*> env;
+	char** envp;
+
+	std::string scriptFileName;
+	std::string scriptDirectoryPath;
 
 	std::map<std::string, std::string> _headers;
 	std::string _body;
 	int _statuscode;
 };
+
+void writeToCgiStdin(ClientState& clientState, KqueueManager& kqManager);
+void readFromCgiStdout(ClientState& clientState, KqueueManager& kqManager);
+bool isCgiFinished(ClientState& clientState);
+
 
 // void	test_1(ClientState& clientstate);
 // void	test_2(ClientState& clientstate);

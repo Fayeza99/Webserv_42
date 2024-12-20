@@ -6,7 +6,6 @@
 #include "RequestParser.hpp"
 #include "Response.hpp"
 #include "ClientState.hpp"
-#include "CgiHandler.hpp"
 #include "KqueueManager.hpp"
 
 #include <sys/types.h>
