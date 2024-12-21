@@ -1,6 +1,6 @@
 #include "Response.hpp"
 
-Response::Response(ClientState& clientState) : _request(*(clientState.request)),  _clientState(clientState), _kqManager(*(clientState.kqManager)), _statuscode(200) {
+Response::Response(ClientState& clientState) : _request(*(clientState.request)),  _clientState(clientState), _statuscode(200) {
 	_location = getLocation(_clientState.serverConfig, _request.getUri());
 	_documentRoot = _location.document_root;
 
@@ -383,16 +383,16 @@ void Response::cgiParentProcess() {
 	_clientState.cgiOutputFd = cgiStdoutPipe[0];
 
 	if (!_request.getBody().empty()) {
-		_kqManager.registerEvent(_clientState.cgiInputFd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+		KqueueManager::registerEvent(_clientState.cgiInputFd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 	}
-	_kqManager.registerEvent(_clientState.cgiOutputFd, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
+	KqueueManager::registerEvent(_clientState.cgiOutputFd, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
 }
 
-void writeToCgiStdin(ClientState& clientState, KqueueManager& kqManager) {
+void writeToCgiStdin(ClientState& clientState) {
 	if (clientState.cgiInputFd < 0) return;
 
 	if (clientState.request->getBody().empty()) {
-		kqManager.registerEvent(clientState.cgiInputFd, EVFILT_WRITE, EV_DELETE);
+		KqueueManager::registerEvent(clientState.cgiInputFd, EVFILT_WRITE, EV_DELETE);
 		close(clientState.cgiInputFd);
 		clientState.cgiInputFd = -1;
 		return;
@@ -402,12 +402,12 @@ void writeToCgiStdin(ClientState& clientState, KqueueManager& kqManager) {
 	ssize_t bytesSent = write(clientState.cgiInputFd, body.data(), body.size());
 
 	if (bytesSent > 0) {
-		kqManager.registerEvent(clientState.cgiInputFd, EVFILT_WRITE, EV_DELETE);
+		KqueueManager::registerEvent(clientState.cgiInputFd, EVFILT_WRITE, EV_DELETE);
 		close(clientState.cgiInputFd);
 		clientState.cgiInputFd = -1;
 	} else if (bytesSent == -1) {
 		std::cerr << "Error Occurred while writing to cgi stdin" << std::endl;
-		kqManager.registerEvent(clientState.cgiInputFd, EVFILT_WRITE, EV_DELETE);
+		KqueueManager::registerEvent(clientState.cgiInputFd, EVFILT_WRITE, EV_DELETE);
 		close(clientState.cgiInputFd);
 		clientState.cgiInputFd = -1;
 	}
@@ -428,7 +428,7 @@ bool isCgiFinished(ClientState& clientState) {
 	}
 }
 
-void readFromCgiStdout(ClientState& clientState, KqueueManager& kqManager) {
+void readFromCgiStdout(ClientState& clientState) {
 	if (clientState.cgiOutputFd < 0) return;
 
 	char buffer[4096];
@@ -441,10 +441,10 @@ void readFromCgiStdout(ClientState& clientState, KqueueManager& kqManager) {
 
 	if (bytesRead > 0) {
 		clientState.responseBuffer = response;
-		kqManager.registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);
-		kqManager.registerEvent(clientState.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+		KqueueManager::registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);
+		KqueueManager::registerEvent(clientState.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 	} else if (bytesRead == 0) {
-		kqManager.registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);
+		KqueueManager::registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);
 		close(clientState.cgiOutputFd);
 		clientState.cgiOutputFd = -1;
 
@@ -453,7 +453,7 @@ void readFromCgiStdout(ClientState& clientState, KqueueManager& kqManager) {
 		}
 	} else {
 		std::cerr << "Error Occurred while reading from cgi stdout" << std::endl;
-		kqManager.registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);
+		KqueueManager::registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);
 		close(clientState.cgiOutputFd);
 		clientState.cgiOutputFd = -1;
 	}

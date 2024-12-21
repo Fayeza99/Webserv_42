@@ -41,7 +41,6 @@ private:
 
 	RequestParser& _request;
 	ClientState& _clientState;
-	KqueueManager& _kqManager;
 	LocationConfig _location;
 	std::string _response;
 	std::string _documentRoot;
@@ -68,8 +67,8 @@ private:
 	int _statuscode;
 };
 
-void writeToCgiStdin(ClientState& clientState, KqueueManager& kqManager);
-void readFromCgiStdout(ClientState& clientState, KqueueManager& kqManager);
+void writeToCgiStdin(ClientState& clientState);
+void readFromCgiStdout(ClientState& clientState);
 bool isCgiFinished(ClientState& clientState);
 
 

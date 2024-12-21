@@ -52,6 +52,9 @@ void Server::setNonBlocking(int fd)
  */
 void Server::setup()
 {
+	// Initializing Kqueue
+	KqueueManager::initialize();
+
 	// Checking for duplicate Server if the server doesn't already exist then make a new one
 	bool serverDuplicate;
 	for (auto config1 = serverConfigs.begin(); config1 != serverConfigs.end(); ++config1)
@@ -174,7 +177,7 @@ void Server::createServerSocket(ServerConfig &config)
 	}
 
 	// Registering the socket fd with kq
-	kqManager.registerEvent(serverSocket, EVFILT_READ, EV_ADD | EV_ENABLE);
+	KqueueManager::registerEvent(serverSocket, EVFILT_READ, EV_ADD | EV_ENABLE);
 
 	// Adding the newly create server socket to the map
 	serverSockets[serverSocket] = config;
@@ -193,7 +196,7 @@ void Server::createServerSocket(ServerConfig &config)
  */
 void Server::removeClient(int clientSocket)
 {
-	kqManager.deregisterEvent(clientSocket);
+	KqueueManager::deregisterEvent(clientSocket);
 	close(clientSocket);
 	clients.erase(clientSocket);
 }
@@ -229,7 +232,7 @@ void Server::handleAccept(int serverSocket)
 		return;
 	}
 
-	kqManager.registerEvent(clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
+	KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
 
 	const ServerConfig &config = serverSockets[serverSocket];
 	clients.emplace(clientSocket, ClientState(config, clientSocket));
@@ -270,7 +273,6 @@ void Server::handleRead(int clientSocket)
 		{
 			RequestParser request(clients[clientSocket].requestBuffer);
 			clients[clientSocket].request = &request;
-			clients[clientSocket].kqManager = &kqManager;
 			Response response(clients[clientSocket]);
 			if (request.isCgiRequest())
 			{
@@ -279,7 +281,7 @@ void Server::handleRead(int clientSocket)
 			else
 			{
 				clients[clientSocket].responseBuffer = response.get_response();
-				kqManager.registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+				KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 			}
 		}
 	}
@@ -332,7 +334,7 @@ void Server::handleWrite(int clientSocket)
 		if (response.empty())
 		{
 
-			kqManager.registerEvent(clientSocket, EVFILT_WRITE, EV_DELETE);
+			KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_DELETE);
 		}
 	}
 }
@@ -398,11 +400,11 @@ void Server::processEvent(struct kevent &event)
 
 		if (event.filter == EVFILT_READ)
 		{
-			readFromCgiStdout(*client, kqManager);
+			readFromCgiStdout(*client);
 		}
 		else if (event.filter == EVFILT_WRITE)
 		{
-			writeToCgiStdin(*client, kqManager);
+			writeToCgiStdin(*client);
 
 		}
 	}
@@ -462,7 +464,7 @@ void Server::run()
 
 	while (true)
 	{
-		int nev = kevent(kqManager.getKqFd(), nullptr, 0, eventList, MAX_EVENTS, nullptr);
+		int nev = kevent(KqueueManager::getKqFd(), nullptr, 0, eventList, MAX_EVENTS, nullptr);
 		if (nev == -1)
 		{
 			std::cerr << "kevent error: " << strerror(errno) << std::endl;

@@ -26,7 +26,6 @@ class Server {
 	private:
 		std::vector<ServerConfig> serverConfigs;
 		std::map<int, ServerConfig> serverSockets;
-		KqueueManager kqManager;
 
 
 		void setNonBlocking(int fd);

@@ -10,12 +10,14 @@
 
 class KqueueManager {
 	private:
-		int kq;
+		static int kq;
+		static bool initialized;
+
+		KqueueManager() = delete;
 
 	public:
-		KqueueManager();
-
-		void registerEvent(int fd, int filter, short flags);
-		void deregisterEvent(int fd);
-		int getKqFd();
+		static void initialize();
+		static void registerEvent(int fd, int filter, short flags);
+		static void deregisterEvent(int fd);
+		static int getKqFd();
 };
