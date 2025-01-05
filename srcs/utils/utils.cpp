@@ -1,5 +1,13 @@
 #include "utils.hpp"
 
+void print_log(const char *color, std::string msg) {
+	time_t timestamp;
+	time(&timestamp);
+	std::string time(ctime(&timestamp));
+	time = time.substr(11, 8);
+	std::cerr << color << time << " --- " << msg << RESET << std::endl;
+}
+
 std::string readConfigFile(const std::string& configFilePath) {
 	std::ifstream configFile(configFilePath);
 	if (!configFile.is_open()) {

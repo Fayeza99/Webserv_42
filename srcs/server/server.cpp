@@ -181,8 +181,8 @@ void Server::createServerSocket(ServerConfig &config)
 
 	// Adding the newly create server socket to the map
 	serverSockets[serverSocket] = config;
-
-	std::cout << "Server is listening on port " << config.listen_port << std::endl;
+	print_log(WHITE, "Server is listening on port " + std::to_string(config.listen_port));
+	// std::cout << "Server is listening on port " << config.listen_port << std::endl;
 }
 
 /**
@@ -211,6 +211,7 @@ void Server::removeClient(int clientSocket)
  */
 void Server::handleAccept(int serverSocket)
 {
+	print_log(BLACK, "[KQUEUE] handle accept");
 	struct sockaddr_in clientAddr;
 	socklen_t clientAddrLen = sizeof(clientAddr);
 	int clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, &clientAddrLen);
@@ -241,10 +242,14 @@ void Server::handleAccept(int serverSocket)
 	clients[clientSocket].clientIPAddress = clientip;
 	clients[clientSocket].clientPort = ntohs(clientAddr.sin_port);
 
-	std::cout << "Accepted new connection from "
-			  << clients[clientSocket].clientIPAddress << ":"
-			  << clients[clientSocket].clientPort
-			  << ", socket " << clientSocket << std::endl;
+	print_log(WHITE, "Accepted new connection from "
+		+ clients[clientSocket].clientIPAddress + ":"
+		+ std::to_string(clients[clientSocket].clientPort)
+		+ ", socket " + std::to_string(clientSocket));
+	// std::cout << "Accepted new connection from "
+	// 		  << clients[clientSocket].clientIPAddress << ":"
+	// 		  << clients[clientSocket].clientPort
+	// 		  << ", socket " << clientSocket << std::endl;
 }
 
 /**
@@ -259,6 +264,7 @@ void Server::handleAccept(int serverSocket)
  */
 void Server::handleRead(int clientSocket)
 {
+	print_log(BLACK, "[KQUEUE] handle read");
 	char buffer[4096];
 	ssize_t bytesRead = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
 
@@ -274,12 +280,14 @@ void Server::handleRead(int clientSocket)
 			RequestParser request(clients[clientSocket].requestBuffer);
 			clients[clientSocket].request = &request;
 			Response response(clients[clientSocket]);
+			print_log(WHITE, "New request: " + clients[clientSocket].requestBuffer + " --- end of request.");
 			if (request.isCgiRequest())
 			{
 				response.executeCgi();
 			}
 			else
 			{
+				print_log(WHITE, "[DEBUG] Request is not for cgi (.py).");
 				clients[clientSocket].responseBuffer = response.get_response();
 				KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 			}
@@ -287,12 +295,12 @@ void Server::handleRead(int clientSocket)
 	}
 	else if (bytesRead == 0)
 	{
-		std::cout << "Client " << clientSocket << " disconnected" << std::endl;
+		print_log(WHITE, "Client " + std::to_string(clientSocket) + " disconnected");
 		removeClient(clientSocket);
 	}
 	else
 	{
-		std::cerr << "Read error on client " << clientSocket << ", removing client." << std::endl;
+		print_log(RED, "Read error on client " + std::to_string(clientSocket) + ", removing client.");
 		removeClient(clientSocket);
 	}
 }
@@ -308,12 +316,14 @@ void Server::handleRead(int clientSocket)
  */
 void Server::handleWrite(int clientSocket)
 {
+	print_log(BLACK, "[KQUEUE] handle write");
 	// std::cout << "ClientAA: " << clientSocket << std::endl;
 	std::string &response = clients[clientSocket].responseBuffer;
 	// std::cout << "ResponseAA: \n" << response << std::endl;
 	if (!response.empty())
 	{
 		ssize_t bytesSent = send(clientSocket, response.c_str(), response.size(), 0);
+		print_log(BLACK, "sent response to client");
 		if (bytesSent > 0)
 		{
 			response.erase(0, bytesSent);
@@ -354,6 +364,7 @@ void Server::handleWrite(int clientSocket)
  */
 void Server::processEvent(struct kevent &event)
 {
+	print_log(BLACK, "[KQUEUE] process event");
 	int fd = static_cast<int>(event.ident);
 
 	if (event.flags & EV_ERROR)

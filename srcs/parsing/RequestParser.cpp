@@ -6,8 +6,6 @@
 
 RequestParser::RequestParser(const std::string &request) : _request(request)
 {
-	// std::cout << "Parsing request:\n"
-	// 		  << request << std::endl;
 	parseRequest(request);
 }
 
@@ -155,7 +153,6 @@ void FileUpload::set_name(void)
 	}
 	name = headers["Content-Disposition"].substr(pos + 6);
 	name = name.substr(0, name.find("\""));
-	std::cout << "name set to: " << name << "\n";
 }
 
 void FileUpload::set_filename(void)
@@ -168,7 +165,6 @@ void FileUpload::set_filename(void)
 	}
 	filename = headers["Content-Disposition"].substr(pos + 10);
 	filename = filename.substr(0, filename.find("\""));
-	std::cout << "filename set to: " << filename << "\n";
 }
 
 std::istringstream &FileUpload::get_stream(void) { return body_stream; }
@@ -199,7 +195,6 @@ void RequestParser::parseUpload(void)
 		upload.set_filename();
 		_upload.push_back(upload);
 	}
-	std::cout << "DEBUG\n";
 }
 // FORMAT: -- , boundary , headers , \r\n\r\n , content , -- , boundary , [...] , boundary , --
 

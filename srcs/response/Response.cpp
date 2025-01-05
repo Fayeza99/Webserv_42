@@ -301,8 +301,8 @@ void Response::prepareEnvironment(void) {
 		envVars["QUERY_STRING"] = "";
 	}
 
-	envVars["SERVER_PORT"] = _clientState.serverConfig.listen_port;
-	envVars["REMOTE_PORT"] = _clientState.clientPort;
+	envVars["SERVER_PORT"] = std::to_string(_clientState.serverConfig.listen_port);
+	envVars["REMOTE_PORT"] = std::to_string(_clientState.clientPort);
 	envVars["REMOTE_ADDR"] = _clientState.clientIPAddress;
 
 	auto headers = _request.getHeaders();
@@ -330,12 +330,15 @@ void Response::executeCgi() {
 	cgiStdinPipe[1] = -1;
 	cgiStdoutPipe[0] = -1;
 	cgiStdoutPipe[1] = -1;
+	prepareEnvironment();
 
 	scriptFileName = _request.getUri().substr(0, (_request.getUri().find(".py") + 3));
 	scriptFileName = scriptFileName.substr(scriptFileName.find_last_of("/") + 1);
 
 	scriptDirectoryPath = _filePath.substr(0, _filePath.find_last_of("/")).c_str();
 
+	print_log(WHITE, "[DEBUG] cgi started. script: " + scriptFileName
+			+ ", path: " + scriptDirectoryPath);
 	if (pipe(cgiStdinPipe) == -1 || pipe(cgiStdoutPipe) == -1) {
 		throw std::runtime_error("Falied to create CGI pipes");
 	}
@@ -367,6 +370,7 @@ void Response::cgiChildProcess() {
 	}
 
 	char *argv[] = {(char *)"/usr/bin/python3", (char *)scriptFileName.c_str(), NULL};
+	print_log(WHITE, "[DEBUG] executing script with python...");
 	execve("/usr/bin/python3", argv, envp);
 
 	exit(1);
@@ -389,6 +393,7 @@ void Response::cgiParentProcess() {
 }
 
 void writeToCgiStdin(ClientState& clientState) {
+	print_log(BLACK, "[KQUEUE] writeToCgiStdin");
 	if (clientState.cgiInputFd < 0) return;
 
 	if (clientState.request->getBody().empty()) {
@@ -417,7 +422,9 @@ bool isCgiFinished(ClientState& clientState) {
 
 	if (clientState.cgiPid <= 0) return true;
 	int status;
+	print_log(WHITE, "[DEBUG] calling waitpid...");
 	pid_t result = waitpid(clientState.cgiPid, &status, WNOHANG);
+	print_log(WHITE, "[DEBUG] waitpid returned.");
 	if (result == 0) {
 		return false;
 	} else if (result == clientState.cgiPid) {
@@ -429,27 +436,33 @@ bool isCgiFinished(ClientState& clientState) {
 }
 
 void readFromCgiStdout(ClientState& clientState) {
+	print_log(BLACK, "[KQUEUE] readFromCgiStdout");
 	if (clientState.cgiOutputFd < 0) return;
 
 	char buffer[4096];
 	ssize_t bytesRead = read(clientState.cgiOutputFd, buffer, sizeof(buffer));
-
 	buffer[bytesRead] = '\0';
 
-	std::string response = "HTTP/1.1 200 OK\r\n";
-	response += buffer;
+	// problems with kq here >>>
+	std::string response = buffer;
+	print_log(WHITE, "parent has received: " + response);
 
 	if (bytesRead > 0) {
-		clientState.responseBuffer = response;
-		KqueueManager::registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);
-		KqueueManager::registerEvent(clientState.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+		print_log(BLACK, "[DEBUG] bytes > 0.");
+		if (clientState.responseBuffer.empty())
+			clientState.responseBuffer = "HTTP/1.1 200 OK\r\n";
+		clientState.responseBuffer += response;
+		// KqueueManager::registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);
 	} else if (bytesRead == 0) {
-		KqueueManager::registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);
+		KqueueManager::registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);//?
+		KqueueManager::registerEvent(clientState.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);//?
 		close(clientState.cgiOutputFd);
 		clientState.cgiOutputFd = -1;
 
 		if (!isCgiFinished(clientState)) {
 			std::cerr << "Something went wrong in CGI, not finished" << std::endl;
+		} else {
+			print_log(WHITE, "script finished. returning response.");
 		}
 	} else {
 		std::cerr << "Error Occurred while reading from cgi stdout" << std::endl;
