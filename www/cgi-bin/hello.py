@@ -27,5 +27,6 @@ response += """</body></html>"""
 # headers
 print("Content-Type: text/html\r\n", end="")
 print(f"Content-Length:", len(response), "\r\n", end="")
+print(f"Connection: close", "\r\n", end="")
 print("\r\n", end="")
 print(response, end="")

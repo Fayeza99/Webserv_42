@@ -7,6 +7,7 @@ Response::Response(ClientState& clientState) : _request(*(clientState.request)),
 	if (!_location.redirect){
 		setFilePath();
 	}
+	print_log(WHITE, "filePath is " + _filePath);
 }
 
 /**
@@ -21,8 +22,8 @@ std::string	Response::get_response(void) {
 		return get_error_response(405, _clientState);
 	if (_request.getMethod() == "DELETE")
 		return handle_delete();
-	// if (_request.getMethod() == "POST")
-	// 	return handle_upload();
+	if (_request.isUpload())
+		return handle_upload();
 	return serve_static_file();
 }
 
@@ -48,8 +49,6 @@ std::string Response::handle_delete(void) {
 std::string Response::handle_upload(void) {
 	std::ostringstream response;
 	bool success = false;
-	// std::cout << "FILE TO WRITE: " << _request.getUpload()[0].filename << std::endl;
-
 	for (const FileUpload& file : _request.getUpload()) {
 		if (file.filename.empty()) {
 			continue ;
@@ -61,7 +60,11 @@ std::string Response::handle_upload(void) {
 		success = true;
 	}
 	if (success) {
-		response << _request.getHttpVersion() << " 201 Created\r\nContent-Type: text/plain\r\n\r\nFile uploaded successfully.";
+		response << _request.getHttpVersion()
+			 << " 201 Created\r\n"
+			 << "Content-Length: 0\r\n"
+			 << "Connection: close\r\n\r\n";
+		
 		return (response.str());
 	}
 	return (get_error_response(500, _clientState));
@@ -216,6 +219,7 @@ std::string get_error_response(const int errorCode, ClientState& _clientState) {
  * @see get_error_response(int), get_content_type(const std::string&), method_allowed()
  */
 std::string Response::serve_static_file() {
+	std::cout << "ASASA\n";
 	std::string uri = _request.getUri();
 	std::ostringstream response;
 
@@ -268,8 +272,12 @@ void Response::setFilePath() {
 	if (_request.getUri() == _location.uri) {
 		if (_location.default_files.size() < 1 && !_request.isUpload())
 			_filePath = "";
-		else
+		else if (_location.default_files.size() < 1 && _request.isUpload())
+			_filePath = _documentRoot;
+		else {
+			std::cout << "Jdkhakfd\n";
 			_filePath = _documentRoot + "/" + _location.default_files[0];
+		}
 	} else {
 		std::string uri = _request.getUri().substr(_location.uri.length());
 		_filePath = _documentRoot + "/" + uri;

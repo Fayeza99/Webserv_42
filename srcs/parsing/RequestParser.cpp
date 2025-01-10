@@ -1,4 +1,5 @@
 #include "RequestParser.hpp"
+#include "utils.hpp"
 #include <sstream>
 #include <cstdlib>
 #include <set>
@@ -39,12 +40,12 @@ void RequestParser::parse_headers(std::istringstream &request_stream, std::unord
 			}
 			else
 			{
-				throw std::runtime_error("Malformed header line: " + line);
+				throw std::runtime_error("Malformed header line1: " + line);
 			}
 		}
 		else
 		{
-			throw std::runtime_error("Malformed header line: " + line);
+			throw std::runtime_error("Malformed header line2: " + line);
 		}
 	}
 }
@@ -82,24 +83,27 @@ void RequestParser::parseRequest(const std::string &request)
 
 	parse_headers(request_stream, headers);
 
+	unsigned long content_length = 0;
 	auto it = headers.find("Content-Length");
 	if (it != headers.end())
 	{
 		try
 		{
-			int content_length = std::stoi(it->second);
+			content_length = std::stoi(it->second);
 			if (content_length < 0)
 			{
 				throw std::runtime_error("Invalid Content-Length value: " + it->second);
 			}
-			body.resize(content_length);
-			request_stream.read(&body[0], content_length);
-			if (static_cast<int>(request_stream.gcount()) < content_length)
-			{
-				throw std::runtime_error("Incomplete request body: Expected " +
-										 std::to_string(content_length) + " bytes, but got " +
-										 std::to_string(request_stream.gcount()));
-			}
+			// body.resize(content_length);
+			while (std::getline(request_stream, line)) {
+        		body += line + '\n'; // Concatenate each line with newline
+    		}
+			// if (static_cast<int>(request_stream.gcount()) < content_length)
+			// {
+			// 	throw std::runtime_error("Incomplete request body: Expected " +
+			// 							 std::to_string(content_length) + " bytes, but got " +
+			// 							 std::to_string(request_stream.gcount()));
+			// }
 		}
 		catch (const std::exception &e)
 		{
@@ -117,11 +121,13 @@ void RequestParser::parseRequest(const std::string &request)
 			}
 		}
 	}
-	// if (headers["Content-Type"].find("multipart/form-data") != std::string::npos)
-	// {
-	// 	parseUpload();
-	// 	_isUpload = true;
-	// }
+	// std::cout << "content_length:" << content_length << ", body:" << body.length() << std::endl;
+	if (headers["Content-Type"].find("multipart/form-data") != std::string::npos && body.length() >= content_length)
+	{
+		print_log(WHITE, "parsing upload");
+		parseUpload();
+		_isUpload = true;
+	}
 }
 
 bool RequestParser::isUpload(void) { return _isUpload; }
@@ -171,11 +177,13 @@ std::istringstream &FileUpload::get_stream(void) { return body_stream; }
 
 void RequestParser::parseUpload(void)
 {
+
 	std::string b(body);
 	std::vector<std::string> parts;
 	set_boundary();
 	while (!b.empty())
 	{
+
 		size_t next = b.find(_boundary);
 		parts.push_back(b.substr(0, next));
 		if (next != std::string::npos)

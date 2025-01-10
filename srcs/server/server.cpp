@@ -272,24 +272,30 @@ void Server::handleRead(int clientSocket)
 		buffer[bytesRead] = '\0';
 		clients[clientSocket].lastActive = time(nullptr);
 		clients[clientSocket].requestBuffer += buffer;
-
-		size_t pos = clients[clientSocket].requestBuffer.find("\r\n\r\n");
-		if (pos != std::string::npos)
+		// print_log(BLACK, clients[clientSocket].requestBuffer);
+		RequestParser request(clients[clientSocket].requestBuffer);
+		print_log(BLACK, "Request Parsed :)");
+		// auto isCL = request.getHeaders().find("Content-Length");
+		// if (isCL != request.getHeaders().end()) {
+		// 	unsigned long CL = stoi(isCL->second);
+		// 	// std::cout << "CL: " << CL << std::endl;
+		// 	if (CL > 0 && request.getBody().length() < CL) {
+		// 		std::cout << "ASHAS\n";
+		// 		return ;
+		// 	}
+		// }
+		clients[clientSocket].request = &request;
+		Response response(clients[clientSocket]);
+		// print_log(WHITE, "New request: " + clients[clientSocket].requestBuffer + " --- end of request.");
+		if (request.isCgiRequest())
 		{
-			RequestParser request(clients[clientSocket].requestBuffer);
-			clients[clientSocket].request = &request;
-			Response response(clients[clientSocket]);
-			print_log(WHITE, "New request: " + clients[clientSocket].requestBuffer + " --- end of request.");
-			if (request.isCgiRequest())
-			{
-				response.executeCgi();
-			}
-			else
-			{
-				print_log(WHITE, "[DEBUG] Request is not for cgi (.py).");
-				clients[clientSocket].responseBuffer = response.get_response();
-				KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
-			}
+			response.executeCgi();
+		}
+		else
+		{
+			print_log(WHITE, "[DEBUG] Request is not for cgi (.py).");
+			clients[clientSocket].responseBuffer = response.get_response();
+			KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 		}
 	}
 	else if (bytesRead == 0)
@@ -343,7 +349,6 @@ void Server::handleWrite(int clientSocket)
 		}
 		if (response.empty())
 		{
-
 			KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_DELETE);
 		}
 	}

@@ -35,7 +35,6 @@ class RequestParser {
 		std::string body;
 
 		std::vector<FileUpload> _upload;
-		bool _isUpload;
 		std::string _boundary;
 
 		void parseRequest(const std::string& request);
@@ -45,6 +44,7 @@ class RequestParser {
 		void set_boundary(void);
 
 	public:
+		bool _isUpload;
 		bool isValidMethod(const std::string& methodStr);
 		bool isUpload(void);
 		bool isCgiRequest(void);
@@ -57,5 +57,4 @@ class RequestParser {
 		std::string const& getBody() const;
 		std::unordered_map<std::string, std::string> const& getHeaders() const;
 		std::vector<FileUpload> const& getUpload() const;
-
 };
