@@ -34,7 +34,6 @@ private:
 	std::string handle_delete(void);
 	std::string handle_redir(void);
 	std::string handle_upload(void);
-	std::string get_error_response(const int errorCode);
 	std::string get_content_type(const std::string& path) const;
 	bool method_allowed(void);
 	void setFilePath();
@@ -67,6 +66,7 @@ private:
 	int _statuscode;
 };
 
+std::string get_error_response(const int errorCode, ClientState& _clientState);
 void writeToCgiStdin(ClientState& clientState);
 void readFromCgiStdout(ClientState& clientState);
 bool isCgiFinished(ClientState& clientState);

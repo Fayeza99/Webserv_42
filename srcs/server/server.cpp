@@ -221,7 +221,6 @@ void Server::handleAccept(int serverSocket)
 		std::cerr << "Failed to accept connection: " << strerror(errno) << std::endl;
 		return;
 	}
-
 	try
 	{
 		setNonBlocking(clientSocket);
@@ -327,6 +326,7 @@ void Server::handleWrite(int clientSocket)
 		if (bytesSent > 0)
 		{
 			response.erase(0, bytesSent);
+			clients[clientSocket].requestBuffer.erase();
 			clients[clientSocket].lastActive = time(nullptr);
 		}
 		else if (bytesSent == 0)

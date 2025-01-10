@@ -17,10 +17,12 @@ Response::Response(ClientState& clientState) : _request(*(clientState.request)),
 std::string	Response::get_response(void) {
 	if (_location.redirect == true)
 		return handle_redir();
-	if (!method_allowed())
-		return get_error_response(405);
+	if (!method_allowed()) 
+		return get_error_response(405, _clientState);
 	if (_request.getMethod() == "DELETE")
 		return handle_delete();
+	// if (_request.getMethod() == "POST")
+	// 	return handle_upload();
 	return serve_static_file();
 }
 
@@ -32,10 +34,10 @@ std::string	Response::get_response(void) {
 std::string Response::handle_delete(void) {
 	char realPath[PATH_MAX];
 	if (realpath(_filePath.c_str(), realPath) == NULL)
-		return get_error_response(404);
+		return get_error_response(404, _clientState);
 	if (!std::remove(_filePath.c_str()))
 		return (_request.getHttpVersion() + " 204 No Content\r\n\r\n");
-	return (get_error_response(403));
+	return (get_error_response(403, _clientState));
 }
 
 /**
@@ -46,11 +48,13 @@ std::string Response::handle_delete(void) {
 std::string Response::handle_upload(void) {
 	std::ostringstream response;
 	bool success = false;
+	// std::cout << "FILE TO WRITE: " << _request.getUpload()[0].filename << std::endl;
+
 	for (const FileUpload& file : _request.getUpload()) {
-		if (file.filename.empty())
+		if (file.filename.empty()) {
 			continue ;
+		}
 		std::string openfile = _filePath + "/" + file.filename;
-		// std::cout << "FILE TO WRITE: " << openfile << std::endl;
 		std::ofstream outfile(openfile);
 		outfile << file.content << std::endl;
 		outfile.close();
@@ -60,7 +64,7 @@ std::string Response::handle_upload(void) {
 		response << _request.getHttpVersion() << " 201 Created\r\nContent-Type: text/plain\r\n\r\nFile uploaded successfully.";
 		return (response.str());
 	}
-	return (get_error_response(500));
+	return (get_error_response(500, _clientState));
 }
 
 /**
@@ -132,7 +136,7 @@ bool Response::method_allowed(void) {
  * @param errorCode used for deciding which file to serve
  * @return std::string file in the form of string as response
  */
-std::string Response::get_error_response(const int errorCode) {
+std::string get_error_response(const int errorCode, ClientState& _clientState) {
 	std::string errorMessage;
 	std::string errorFilePath;
 
@@ -179,7 +183,7 @@ std::string Response::get_error_response(const int errorCode) {
 	buffer << file.rdbuf();
 	std::string body = buffer.str();
 	file.close();
-	response	<< _request.getHttpVersion() << errorMessage
+	response	<< _clientState.request->getHttpVersion() << errorMessage
 				<< "Content-Length: " << body.length() << "\r\n"
 				<< "Connection: close\r\n\r\n"
 				<< body;
@@ -216,12 +220,12 @@ std::string Response::serve_static_file() {
 	std::ostringstream response;
 
 	if (!method_allowed() || _request.getMethod() != "GET") {
-		return get_error_response(405);
+		return get_error_response(405, _clientState);
 	}
 
 	char resolvedPath[PATH_MAX];
 	if (realpath(_filePath.c_str(), resolvedPath) == NULL) {
-		return get_error_response(404);
+		return get_error_response(404, _clientState);
 	}
 
 	std::string resolvedFilePath(resolvedPath);
@@ -229,17 +233,17 @@ std::string Response::serve_static_file() {
 	char resolvedDocRoot[PATH_MAX];
 	if (realpath(_documentRoot.c_str(), resolvedDocRoot) == NULL) {
 		std::cerr << "Failed to resolve document root: " << _documentRoot << std::endl;
-		return get_error_response(500);
+		return get_error_response(500, _clientState);
 	}
 
 	std::string resolvedDocRootStr(resolvedDocRoot);
 	if (resolvedFilePath.find(resolvedDocRootStr) != 0) {
-		return get_error_response(403);
+		return get_error_response(403, _clientState);
 	}
 
 	std::ifstream file(resolvedFilePath.c_str(), std::ios::in | std::ios::binary);
 	if (!file.is_open()) {
-		return get_error_response(404);
+		return get_error_response(404, _clientState);
 	}
 
 	std::ostringstream bodyStream;
@@ -467,6 +471,9 @@ void readFromCgiStdout(ClientState& clientState) {
 	} else {
 		std::cerr << "Error Occurred while reading from cgi stdout" << std::endl;
 		KqueueManager::registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);
+		clientState.responseBuffer.erase();
+		clientState.responseBuffer = get_error_response(500, clientState);
+		KqueueManager::registerEvent(clientState.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);//?
 		close(clientState.cgiOutputFd);
 		clientState.cgiOutputFd = -1;
 	}
