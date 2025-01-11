@@ -211,14 +211,14 @@ void Server::removeClient(int clientSocket)
  */
 void Server::handleAccept(int serverSocket)
 {
-	print_log(BLACK, "[KQUEUE] handle accept");
+	print_log(BLACK, "[FUNC] handleAccept");
 	struct sockaddr_in clientAddr;
 	socklen_t clientAddrLen = sizeof(clientAddr);
 	int clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, &clientAddrLen);
 
 	if (clientSocket == -1)
 	{
-		std::cerr << "Failed to accept connection: " << strerror(errno) << std::endl;
+		std::cerr << "[ERROR] Failed to accept connection: " << strerror(errno) << std::endl;
 		return;
 	}
 	try
@@ -227,7 +227,7 @@ void Server::handleAccept(int serverSocket)
 	}
 	catch (const std::exception &e)
 	{
-		std::cerr << "Failed to set client socket to non-blocking: " << e.what() << std::endl;
+		std::cerr << "[ERROR] Failed to set client socket to non-blocking: " << e.what() << std::endl;
 		close(clientSocket);
 		return;
 	}
@@ -263,7 +263,7 @@ void Server::handleAccept(int serverSocket)
  */
 void Server::handleRead(int clientSocket)
 {
-	print_log(BLACK, "[KQUEUE] handle read");
+	print_log(BLACK, "[FUNC] handleRead");
 	char buffer[4096];
 	ssize_t bytesRead = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
 
@@ -280,13 +280,12 @@ void Server::handleRead(int clientSocket)
 		// 	unsigned long CL = stoi(isCL->second);
 		// 	// std::cout << "CL: " << CL << std::endl;
 		// 	if (CL > 0 && request.getBody().length() < CL) {
-		// 		std::cout << "ASHAS\n";
 		// 		return ;
 		// 	}
 		// }
 		clients[clientSocket].request = &request;
 		Response response(clients[clientSocket]);
-		// print_log(WHITE, "New request: " + clients[clientSocket].requestBuffer + " --- end of request.");
+		print_log(WHITE, "New request: Method = " + request.getMethod() + ", URI = " + request.getUri());
 		if (request.isCgiRequest())
 		{
 			response.executeCgi();
@@ -321,7 +320,7 @@ void Server::handleRead(int clientSocket)
  */
 void Server::handleWrite(int clientSocket)
 {
-	print_log(BLACK, "[KQUEUE] handle write");
+	print_log(BLACK, "[FUNC] handleWrite");
 	// std::cout << "ClientAA: " << clientSocket << std::endl;
 	std::string &response = clients[clientSocket].responseBuffer;
 	// std::cout << "ResponseAA: \n" << response << std::endl;
@@ -329,21 +328,21 @@ void Server::handleWrite(int clientSocket)
 	{
 		ssize_t bytesSent = send(clientSocket, response.c_str(), response.size(), 0);
 		print_log(BLACK, "sent response to client");
+		clients[clientSocket].requestBuffer.erase();
+		clients[clientSocket].responseBuffer.clear();
 		if (bytesSent > 0)
 		{
-			response.erase(0, bytesSent);
-			clients[clientSocket].requestBuffer.erase();
 			clients[clientSocket].lastActive = time(nullptr);
 		}
 		else if (bytesSent == 0)
 		{
-			std::cerr << "Client " << clientSocket << " disconnected during write." << std::endl;
+			std::cerr << "[ERROR] Client " << clientSocket << " disconnected during write." << std::endl;
 			removeClient(clientSocket);
 			return;
 		}
 		else
 		{
-			std::cerr << "Write error on client " << clientSocket << ", removing client." << std::endl;
+			std::cerr << "[ERROR] Write error on client " << clientSocket << ", removing client." << std::endl;
 			removeClient(clientSocket);
 			return;
 		}
@@ -369,19 +368,19 @@ void Server::handleWrite(int clientSocket)
  */
 void Server::processEvent(struct kevent &event)
 {
-	print_log(BLACK, "[KQUEUE] process event");
+	print_log(BLACK, "[FUNC] processEvent");
 	int fd = static_cast<int>(event.ident);
 
 	if (event.flags & EV_ERROR)
 	{
 		if (serverSockets.count(fd))
 		{
-			std::cerr << "Error on server socket: " << strerror(static_cast<int>(event.data)) << std::endl;
+			std::cerr << "[ERROR] Error on server socket: " << strerror(static_cast<int>(event.data)) << std::endl;
 		}
 		else
 		{
 			int clientSocket = static_cast<int>(event.ident);
-			std::cerr << "Error on client socket " << clientSocket << ": " << strerror(static_cast<int>(event.data)) << std::endl;
+			std::cerr << "[ERROR] Error on client socket " << clientSocket << ": " << strerror(static_cast<int>(event.data)) << std::endl;
 			removeClient(clientSocket);
 		}
 		return;
@@ -410,7 +409,7 @@ void Server::processEvent(struct kevent &event)
 
 		if (!client)
 		{
-			std::cerr << "Unknown fd in processEvent: " << fd << std::endl;
+			std::cerr << "[ERROR] Unknown fd in processEvent: " << fd << std::endl;
 			return;
 		}
 
@@ -455,7 +454,7 @@ void Server::checkTimeouts()
 		if (currentTime - it->second.lastActive > TIMEOUT_DURATION)
 		{
 			int clientSocket = it->first;
-			std::cout << "Client " << clientSocket << " timed out" << std::endl;
+			print_log(WHITE, "Client " + std::to_string(clientSocket) + " timed out");
 			removeClient(clientSocket);
 			it = clients.erase(it);
 		}
@@ -483,7 +482,7 @@ void Server::run()
 		int nev = kevent(KqueueManager::getKqFd(), nullptr, 0, eventList, MAX_EVENTS, nullptr);
 		if (nev == -1)
 		{
-			std::cerr << "kevent error: " << strerror(errno) << std::endl;
+			std::cerr << "[ERROR] kevent error: " << strerror(errno) << std::endl;
 			break;
 		}
 		for (int i = 0; i < nev; ++i)

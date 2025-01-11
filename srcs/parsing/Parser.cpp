@@ -46,7 +46,7 @@ void Parser::eat(TokenType type)
 {
 	if (currentToken.type != type && type != TokenType::EOF_TOKEN)
 	{
-		std::cerr << "Parsing error at position " << lexer.getPosition() << ": expected token of type "
+		std::cerr << "[ERROR] Parsing error at position " << lexer.getPosition() << ": expected token of type "
 				  << static_cast<int>(type) << " (" << tokenTypeToString(type) << ")"
 				  << ", but found token of type " << static_cast<int>(currentToken.type)
 				  << " (" << tokenTypeToString(currentToken.type) << ") with value '"
@@ -88,7 +88,7 @@ void Parser::parseErrorPage(ServerConfig &server)
 
 	if (currentToken.type != TokenType::NUMBER)
 	{
-		std::cerr << "Parsing error at position " << lexer.getPosition()
+		std::cerr << "[ERROR] Parsing error at position " << lexer.getPosition()
 				  << ": expected error code (NUMBER) after 'error_page', but found "
 				  << tokenTypeToString(currentToken.type) << std::endl;
 		throw std::runtime_error("Syntax error in 'error_page' directive.");
@@ -99,7 +99,7 @@ void Parser::parseErrorPage(ServerConfig &server)
 	std::string errorPageUri;
 	if (currentToken.type != TokenType::URI && currentToken.type != TokenType::STRING)
 	{
-		std::cerr << "Parsing error at position " << lexer.getPosition()
+		std::cerr << "[ERROR] Parsing error at position " << lexer.getPosition()
 				  << ": expected URI (STRING) after error code in 'error_page', but found "
 				  << tokenTypeToString(currentToken.type) << std::endl;
 		throw std::runtime_error("Syntax error in 'error_page' directive.");
@@ -121,7 +121,7 @@ void Parser::parseErrorPage(ServerConfig &server)
 void Parser::parseAutoIndex(ServerConfig &server) {
 	eat(TokenType::AUTOINDEX);
 	if ((currentToken.type != TokenType::STRING) || (currentToken.value != "on" && currentToken.value != "off")) {
-		std::cerr << "Parsing error at position " << lexer.getPosition()
+		std::cerr << "[ERROR] Parsing error at position " << lexer.getPosition()
 				  << ": expected on/off (String) after 'autoindex', but found "
 				  << tokenTypeToString(currentToken.type) << std::endl;
 		throw std::runtime_error("Syntax error in 'autoindex' directive.");
@@ -189,7 +189,7 @@ LocationConfig Parser::parseLocation()
 			} else if (currentToken.type == TokenType::AUTOINDEX) {
 				eat(TokenType::AUTOINDEX);
 				if ((currentToken.type != TokenType::STRING) || (currentToken.value != "on" && currentToken.value != "off")) {
-					std::cerr << "Parsing error at position " << lexer.getPosition()
+					std::cerr << "[ERROR] Parsing error at position " << lexer.getPosition()
 							  << ": expected on/off (String) after 'autoindex', but found "
 							  << tokenTypeToString(currentToken.type) << std::endl;
 					throw std::runtime_error("Syntax error in 'location (autoindex)' directive.");
@@ -267,7 +267,7 @@ ServerConfig Parser::parseServer()
 		}
 		else
 		{
-			std::cerr << "Error: Unexpected token within server block: " << static_cast<int>(currentToken.type) << std::endl;
+			std::cerr << "[ERROR] Unexpected token within server block: " << static_cast<int>(currentToken.type) << std::endl;
 			throw std::runtime_error("Parsing error: Unexpected token within server block.");
 		}
 	}
@@ -288,7 +288,7 @@ GlobalConfig Parser::parse()
 		}
 		else
 		{
-			std::cerr << "Error: Unexpected token " << static_cast<int>(currentToken.type) << std::endl;
+			std::cerr << "[ERROR] Unexpected token " << static_cast<int>(currentToken.type) << std::endl;
 			throw std::runtime_error("Parsing error: Unexpected token.");
 		}
 	}

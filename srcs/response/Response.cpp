@@ -7,7 +7,7 @@ Response::Response(ClientState& clientState) : _request(*(clientState.request)),
 	if (!_location.redirect){
 		setFilePath();
 	}
-	print_log(WHITE, "filePath is " + _filePath);
+	print_log(WHITE, "Requested Uri " + _request.getUri() + " translates to file " + _filePath);
 }
 
 /**
@@ -219,7 +219,6 @@ std::string get_error_response(const int errorCode, ClientState& _clientState) {
  * @see get_error_response(int), get_content_type(const std::string&), method_allowed()
  */
 std::string Response::serve_static_file() {
-	std::cout << "ASASA\n";
 	std::string uri = _request.getUri();
 	std::ostringstream response;
 
@@ -236,7 +235,7 @@ std::string Response::serve_static_file() {
 
 	char resolvedDocRoot[PATH_MAX];
 	if (realpath(_documentRoot.c_str(), resolvedDocRoot) == NULL) {
-		std::cerr << "Failed to resolve document root: " << _documentRoot << std::endl;
+		std::cerr << "[ERROR] Failed to resolve document root: " << _documentRoot << std::endl;
 		return get_error_response(500, _clientState);
 	}
 
@@ -275,7 +274,6 @@ void Response::setFilePath() {
 		else if (_location.default_files.size() < 1 && _request.isUpload())
 			_filePath = _documentRoot;
 		else {
-			std::cout << "Jdkhakfd\n";
 			_filePath = _documentRoot + "/" + _location.default_files[0];
 		}
 	} else {
@@ -405,7 +403,7 @@ void Response::cgiParentProcess() {
 }
 
 void writeToCgiStdin(ClientState& clientState) {
-	print_log(BLACK, "[KQUEUE] writeToCgiStdin");
+	print_log(BLACK, "[FUNC] writeToCgiStdin");
 	if (clientState.cgiInputFd < 0) return;
 
 	if (clientState.request->getBody().empty()) {
@@ -423,7 +421,7 @@ void writeToCgiStdin(ClientState& clientState) {
 		close(clientState.cgiInputFd);
 		clientState.cgiInputFd = -1;
 	} else if (bytesSent == -1) {
-		std::cerr << "Error Occurred while writing to cgi stdin" << std::endl;
+		std::cerr << "[ERROR] Error Occurred while writing to cgi stdin" << std::endl;
 		KqueueManager::registerEvent(clientState.cgiInputFd, EVFILT_WRITE, EV_DELETE);
 		close(clientState.cgiInputFd);
 		clientState.cgiInputFd = -1;
@@ -442,13 +440,13 @@ bool isCgiFinished(ClientState& clientState) {
 	} else if (result == clientState.cgiPid) {
 		return true;
 	} else {
-		std::cerr << "Something went wrong with waitpid" << std::endl;
+		std::cerr << "[ERROR] Something went wrong with waitpid" << std::endl;
 		return true;
 	}
 }
 
 void readFromCgiStdout(ClientState& clientState) {
-	print_log(BLACK, "[KQUEUE] readFromCgiStdout");
+	print_log(BLACK, "[FUNC] readFromCgiStdout");
 	if (clientState.cgiOutputFd < 0) return;
 
 	char buffer[4096];
@@ -457,10 +455,10 @@ void readFromCgiStdout(ClientState& clientState) {
 
 	// problems with kq here >>>
 	std::string response = buffer;
-	print_log(WHITE, "parent has received: " + response);
+	// print_log(WHITE, "parent has received: " + response);
 
 	if (bytesRead > 0) {
-		print_log(BLACK, "[DEBUG] bytes > 0.");
+		// print_log(BLACK, "[DEBUG] bytes > 0.");
 		if (clientState.responseBuffer.empty())
 			clientState.responseBuffer = "HTTP/1.1 200 OK\r\n";
 		clientState.responseBuffer += response;
@@ -472,12 +470,12 @@ void readFromCgiStdout(ClientState& clientState) {
 		clientState.cgiOutputFd = -1;
 
 		if (!isCgiFinished(clientState)) {
-			std::cerr << "Something went wrong in CGI, not finished" << std::endl;
+			std::cerr << "[ERROR] Something went wrong in CGI, not finished" << std::endl;
 		} else {
-			print_log(WHITE, "script finished. returning response.");
+			print_log(WHITE, "[DEBUG] script finished. returning response.");
 		}
 	} else {
-		std::cerr << "Error Occurred while reading from cgi stdout" << std::endl;
+		std::cerr << "[ERROR] Error Occurred while reading from cgi stdout" << std::endl;
 		KqueueManager::registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);
 		clientState.responseBuffer.erase();
 		clientState.responseBuffer = get_error_response(500, clientState);
