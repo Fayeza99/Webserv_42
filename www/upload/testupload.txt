@@ -1,6 +1,0 @@
-Content-Disposition: form-data; name="file"; filename="testupload.txt"
-Content-Type: text/plain
-
-hello to server :)
-
---

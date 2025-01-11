@@ -46,10 +46,11 @@ class RequestParser {
 	public:
 		bool _isUpload;
 		bool isValidMethod(const std::string& methodStr);
-		bool isUpload(void);
 		bool isCgiRequest(void);
 		std::string trim(const std::string& str);
+
 		RequestParser(const std::string& request);
+		~RequestParser();
 		std::string const& getRequest() const;
 		std::string const& getMethod() const;
 		std::string const& getUri() const;

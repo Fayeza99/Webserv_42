@@ -1,4 +1,5 @@
 #include "utils.hpp"
+#include "GlobalConfig.hpp"
 
 void print_log(const char *color, std::string msg) {
 	time_t timestamp;
@@ -137,43 +138,27 @@ std::string getDocumentRoot(const ServerConfig &serverConfig, const std::string 
 	return bestMatchRoot;
 }
 
+LocationConfig& LocationConfig::operator=( const LocationConfig& c ) {
+	this->uri = c.uri;
+	this->document_root = c.document_root;
+	this->default_files = c.default_files;
+	this->supported_methods = c.supported_methods;
+	this->cgi_paths = c.cgi_paths;
+	this->redirect = c.redirect;
+	this->redirect_uri = c.redirect_uri;
+	return (*this);
+}
 
-LocationConfig getLocation(const ServerConfig &serverConfig, const std::string &uri) {
-	LocationConfig bestMatchLocation;
+void LocationConfig::getLocation(const ServerConfig &serverConfig, const std::string &match_uri) {
 	size_t bestMatchLength = 0;
-
-	std::string _uri;
-	std::string document_root;
-	std::string redirect_uri;
-	bool redirect;
-	std::vector<std::string> default_files;
-	std::set<std::string> supported_methods;
-	std::map<std::string, std::string> cgi_paths;
 
 	// choose the location from the config file, that fits the request best
 	for (const LocationConfig &loc : serverConfig.locations) {
-		if (uri.compare(0, loc.uri.size(), loc.uri) == 0) {
-
+		if (match_uri.compare(0, loc.uri.length(), loc.uri) == 0) {
 			if (loc.uri.size() > bestMatchLength) {
-				_uri = loc.uri;
-				document_root = loc.document_root;
-				default_files = loc.default_files;
-				supported_methods = loc.supported_methods;
-				cgi_paths = loc.cgi_paths;
-				redirect = loc.redirect;
-				redirect_uri = loc.redirect_uri;
-				bestMatchLength = loc.uri.size();
+				*this = loc;
+				bestMatchLength = loc.uri.length();
 			}
 		}
 	}
-
-	bestMatchLocation.uri = _uri;
-	bestMatchLocation.document_root = document_root;
-	bestMatchLocation.default_files = default_files;
-	bestMatchLocation.supported_methods = supported_methods;
-	bestMatchLocation.cgi_paths = cgi_paths;
-	bestMatchLocation.redirect = redirect;
-	bestMatchLocation.redirect_uri = redirect_uri;
-
-	return bestMatchLocation;
 }

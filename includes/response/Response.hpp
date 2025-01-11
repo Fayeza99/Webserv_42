@@ -28,6 +28,8 @@ public:
 	RequestParser& get_request(void);
 	int get_status(void);
 	void executeCgi();
+	void writeToCgiStdin(ClientState& clientState);
+	bool readFromCgiStdout(ClientState& clientState);
 
 private:
 	std::string serve_static_file(void);
@@ -38,7 +40,7 @@ private:
 	bool method_allowed(void);
 	void setFilePath();
 
-	RequestParser& _request;
+	RequestParser* _request;
 	ClientState& _clientState;
 	LocationConfig _location;
 	std::string _response;
@@ -67,8 +69,6 @@ private:
 };
 
 std::string get_error_response(const int errorCode, ClientState& _clientState);
-void writeToCgiStdin(ClientState& clientState);
-void readFromCgiStdout(ClientState& clientState);
 bool isCgiFinished(ClientState& clientState);
 
 

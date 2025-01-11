@@ -9,6 +9,8 @@
 #include <cctype>
 #include <cstdlib>
 
+class ServerConfig;
+
 class LocationConfig
 {
 public:
@@ -21,6 +23,8 @@ public:
 	std::set<std::string> supported_methods;
 	std::map<std::string, std::string> cgi_paths;
 	LocationConfig() : uri(""), document_root("") {}
+	void getLocation(const ServerConfig &serverConfig, const std::string &uri);
+	LocationConfig& operator=( const LocationConfig& c );
 };
 
 class ServerConfig

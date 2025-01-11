@@ -5,9 +5,14 @@
 #include <set>
 #include <algorithm>
 
-RequestParser::RequestParser(const std::string &request) : _request(request)
+RequestParser::RequestParser(const std::string &request) : _request(request), _isUpload()
 {
-	parseRequest(request);
+	print_log(BLUE, "RequestParser Constructor");
+	parseRequest(_request);
+}
+
+RequestParser::~RequestParser() {
+	print_log(BLUE, "RequestParser Destructor");
 }
 
 bool RequestParser::isValidMethod(const std::string &methodStr)
@@ -96,8 +101,8 @@ void RequestParser::parseRequest(const std::string &request)
 			}
 			// body.resize(content_length);
 			while (std::getline(request_stream, line)) {
-        		body += line + '\n'; // Concatenate each line with newline
-    		}
+				body += line + '\n'; // Concatenate each line with newline
+			}
 			// if (static_cast<int>(request_stream.gcount()) < content_length)
 			// {
 			// 	throw std::runtime_error("Incomplete request body: Expected " +
@@ -122,7 +127,8 @@ void RequestParser::parseRequest(const std::string &request)
 		}
 	}
 	// std::cout << "content_length:" << content_length << ", body:" << body.length() << std::endl;
-	if (headers["Content-Type"].find("multipart/form-data") != std::string::npos && body.length() >= content_length)
+	// if (headers["Content-Type"].find("multipart/form-data") != std::string::npos && body.length() >= content_length)
+	if (headers["Content-Type"].find("multipart/form-data") != std::string::npos)
 	{
 		print_log(WHITE, "parsing upload");
 		parseUpload();
@@ -130,14 +136,14 @@ void RequestParser::parseRequest(const std::string &request)
 	}
 }
 
-bool RequestParser::isUpload(void) { return _isUpload; }
-
 void RequestParser::set_boundary(void)
 {
 	_boundary = headers["Content-Type"];
 	_boundary = _boundary.substr(_boundary.find("boundary=") + 9);
 	_boundary = trim(_boundary);
 }
+
+// -----------------------------------------------------------------FileUpload
 
 FileUpload::FileUpload(std::string body) : body_stream(body) {}
 

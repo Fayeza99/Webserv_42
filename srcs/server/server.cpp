@@ -1,6 +1,16 @@
 #include "server.hpp"
 
-Server::Server() {}
+Server::Server() {
+	_request = NULL;
+	_response = NULL;
+}
+
+Server::~Server() {
+	if (_request)
+		delete _request;
+	if (_response)
+		delete _response;
+}
 
 /**
  * @brief this function calls the readConfigFile and
@@ -211,7 +221,7 @@ void Server::removeClient(int clientSocket)
  */
 void Server::handleAccept(int serverSocket)
 {
-	print_log(BLACK, "[FUNC] handleAccept");
+	// print_log(BLACK, "[FUNC] handleAccept");
 	struct sockaddr_in clientAddr;
 	socklen_t clientAddrLen = sizeof(clientAddr);
 	int clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, &clientAddrLen);
@@ -235,7 +245,7 @@ void Server::handleAccept(int serverSocket)
 	KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
 
 	const ServerConfig &config = serverSockets[serverSocket];
-	clients.emplace(clientSocket, ClientState(config, clientSocket));
+	clients.emplace(clientSocket, ClientState(config, clientSocket));//!!!
 
 	std::string clientip(inet_ntoa(clientAddr.sin_addr));
 	clients[clientSocket].clientIPAddress = clientip;
@@ -263,7 +273,7 @@ void Server::handleAccept(int serverSocket)
  */
 void Server::handleRead(int clientSocket)
 {
-	print_log(BLACK, "[FUNC] handleRead");
+	// print_log(BLACK, "[FUNC] handleRead");
 	char buffer[4096];
 	ssize_t bytesRead = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
 
@@ -273,8 +283,7 @@ void Server::handleRead(int clientSocket)
 		clients[clientSocket].lastActive = time(nullptr);
 		clients[clientSocket].requestBuffer += buffer;
 		// print_log(BLACK, clients[clientSocket].requestBuffer);
-		RequestParser request(clients[clientSocket].requestBuffer);
-		print_log(BLACK, "Request Parsed :)");
+		_request = new RequestParser(clients[clientSocket].requestBuffer);
 		// auto isCL = request.getHeaders().find("Content-Length");
 		// if (isCL != request.getHeaders().end()) {
 		// 	unsigned long CL = stoi(isCL->second);
@@ -283,23 +292,27 @@ void Server::handleRead(int clientSocket)
 		// 		return ;
 		// 	}
 		// }
-		clients[clientSocket].request = &request;
-		Response response(clients[clientSocket]);
-		print_log(WHITE, "New request: Method = " + request.getMethod() + ", URI = " + request.getUri());
-		if (request.isCgiRequest())
+		clients[clientSocket].request = _request;
+		_response = new Response(clients[clientSocket]);
+		if ((*_request).isCgiRequest())
 		{
-			response.executeCgi();
+			(*_response).executeCgi();
+			print_log(WHITE, "executeCgi returned");
 		}
 		else
 		{
-			print_log(WHITE, "[DEBUG] Request is not for cgi (.py).");
-			clients[clientSocket].responseBuffer = response.get_response();
+			// print_log(WHITE, "[DEBUG] Request is not for cgi (.py).");
+			clients[clientSocket].responseBuffer = (*_response).get_response();
+			std::cout << BLACK << "RESPONSE\n" << clients[clientSocket].responseBuffer;
 			KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+			delete _response;
+			delete _request;
+			clients[clientSocket].request = NULL;
 		}
 	}
 	else if (bytesRead == 0)
 	{
-		print_log(WHITE, "Client " + std::to_string(clientSocket) + " disconnected");
+		print_log(BLACK, "Client " + std::to_string(clientSocket) + " disconnected");
 		removeClient(clientSocket);
 	}
 	else
@@ -320,15 +333,15 @@ void Server::handleRead(int clientSocket)
  */
 void Server::handleWrite(int clientSocket)
 {
-	print_log(BLACK, "[FUNC] handleWrite");
+	// print_log(BLACK, "[FUNC] handleWrite");
 	// std::cout << "ClientAA: " << clientSocket << std::endl;
 	std::string &response = clients[clientSocket].responseBuffer;
 	// std::cout << "ResponseAA: \n" << response << std::endl;
 	if (!response.empty())
 	{
 		ssize_t bytesSent = send(clientSocket, response.c_str(), response.size(), 0);
-		print_log(BLACK, "sent response to client");
-		clients[clientSocket].requestBuffer.erase();
+		print_log(BLACK, "Response sent");
+		clients[clientSocket].requestBuffer.clear();
 		clients[clientSocket].responseBuffer.clear();
 		if (bytesSent > 0)
 		{
@@ -368,7 +381,7 @@ void Server::handleWrite(int clientSocket)
  */
 void Server::processEvent(struct kevent &event)
 {
-	print_log(BLACK, "[FUNC] processEvent");
+	// print_log(BLACK, "[FUNC] processEvent");
 	int fd = static_cast<int>(event.ident);
 
 	if (event.flags & EV_ERROR)
@@ -415,12 +428,15 @@ void Server::processEvent(struct kevent &event)
 
 		if (event.filter == EVFILT_READ)
 		{
-			readFromCgiStdout(*client);
+			bool finished = (*_response).readFromCgiStdout(*client);
+			if (finished) {
+				delete _response;
+				delete _request;
+			}
 		}
 		else if (event.filter == EVFILT_WRITE)
 		{
-			writeToCgiStdin(*client);
-
+			(*_response).writeToCgiStdin(*client);
 		}
 	}
 }

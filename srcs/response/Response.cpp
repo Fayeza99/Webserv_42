@@ -1,13 +1,24 @@
 #include "Response.hpp"
 
-Response::Response(ClientState& clientState) : _request(*(clientState.request)),  _clientState(clientState), _statuscode(200) {
-	_location = getLocation(_clientState.serverConfig, _request.getUri());
+Response::Response(ClientState& clientState) : _clientState(clientState), _location(), _statuscode(200) {
+	print_log(BLUE, "Response Constructor");
+	_request = clientState.request;
+	_location.getLocation(_clientState.serverConfig, (*_request).getUri());
 	_documentRoot = _location.document_root;
 
 	if (!_location.redirect){
 		setFilePath();
 	}
-	print_log(WHITE, "Requested Uri " + _request.getUri() + " translates to file " + _filePath);
+	print_log(BLACK, "[REQUEST] Method=" + (*_request).getMethod() + ", Uri=" + (*_request).getUri() + ", Path=" + _filePath);
+	std::cout << BLACK << "HEADERS";
+	for (auto h : (*_request).getHeaders()) {
+		std::cout << "\n\t" << h.first << ":" << h.second;
+	}
+	std::cout << "\nBODY\n" << (*_request).getBody() << "\n" << RESET;
+}
+
+Response::~Response() {
+	print_log(BLUE, "Response Destructor");
 }
 
 /**
@@ -20,9 +31,9 @@ std::string	Response::get_response(void) {
 		return handle_redir();
 	if (!method_allowed()) 
 		return get_error_response(405, _clientState);
-	if (_request.getMethod() == "DELETE")
+	if ((*_request).getMethod() == "DELETE")
 		return handle_delete();
-	if (_request.isUpload())
+	if ((*_request)._isUpload)
 		return handle_upload();
 	return serve_static_file();
 }
@@ -37,7 +48,7 @@ std::string Response::handle_delete(void) {
 	if (realpath(_filePath.c_str(), realPath) == NULL)
 		return get_error_response(404, _clientState);
 	if (!std::remove(_filePath.c_str()))
-		return (_request.getHttpVersion() + " 204 No Content\r\n\r\n");
+		return ((*_request).getHttpVersion() + " 204 No Content\r\n\r\n");
 	return (get_error_response(403, _clientState));
 }
 
@@ -49,7 +60,7 @@ std::string Response::handle_delete(void) {
 std::string Response::handle_upload(void) {
 	std::ostringstream response;
 	bool success = false;
-	for (const FileUpload& file : _request.getUpload()) {
+	for (const FileUpload& file : (*_request).getUpload()) {
 		if (file.filename.empty()) {
 			continue ;
 		}
@@ -60,13 +71,14 @@ std::string Response::handle_upload(void) {
 		success = true;
 	}
 	if (success) {
-		response << _request.getHttpVersion()
+		response << (*_request).getHttpVersion()
 			 << " 201 Created\r\n"
 			 << "Content-Length: 0\r\n"
 			 << "Connection: close\r\n\r\n";
 		
 		return (response.str());
 	}
+	print_log(RED, "[ERROR] handleUpload");
 	return (get_error_response(500, _clientState));
 }
 
@@ -77,9 +89,9 @@ std::string Response::handle_upload(void) {
  */
 std::string Response::handle_redir(void) {
 	std::ostringstream response;
-	if (_request.getUri() == _location.redirect_uri)
+	if ((*_request).getUri() == _location.redirect_uri)
 		return serve_static_file();
-	response << _request.getHttpVersion()
+	response << (*_request).getHttpVersion()
 			 << " 302 Found\r\n"
 			 << "Location: " << _location.redirect_uri << "\r\n"
 			 << "Connection: close\r\n\r\n";
@@ -128,7 +140,7 @@ bool Response::method_allowed(void) {
 	bool isSupported = std::find(
 		_location.supported_methods.begin(),
 		_location.supported_methods.end(),
-		_request.getMethod()
+		(*_request).getMethod()
 	) != _location.supported_methods.end();
 	return isSupported;
 }
@@ -219,10 +231,10 @@ std::string get_error_response(const int errorCode, ClientState& _clientState) {
  * @see get_error_response(int), get_content_type(const std::string&), method_allowed()
  */
 std::string Response::serve_static_file() {
-	std::string uri = _request.getUri();
+	std::string uri = (*_request).getUri();
 	std::ostringstream response;
 
-	if (!method_allowed() || _request.getMethod() != "GET") {
+	if (!method_allowed() || (*_request).getMethod() != "GET") {
 		return get_error_response(405, _clientState);
 	}
 
@@ -255,7 +267,7 @@ std::string Response::serve_static_file() {
 
 	std::string contentType = get_content_type(resolvedFilePath);
 
-	response	<< _request.getHttpVersion() << " 200 OK\r\n"
+	response	<< (*_request).getHttpVersion() << " 200 OK\r\n"
 				<< "Content-Type: " << contentType << "\r\n"
 				<< "Content-Length: " << body.size() << "\r\n"
 				<< "Connection: close\r\n\r\n"
@@ -268,28 +280,30 @@ std::string Response::serve_static_file() {
  *
  */
 void Response::setFilePath() {
-	if (_request.getUri() == _location.uri) {
-		if (_location.default_files.size() < 1 && !_request.isUpload())
+	if ((*_request).getUri() == _location.uri) {
+		if (_location.default_files.size() < 1 && !(*_request)._isUpload) {
 			_filePath = "";
-		else if (_location.default_files.size() < 1 && _request.isUpload())
+			print_log(RED, "HERE");
+		}
+		else if (_location.default_files.size() < 1 && (*_request)._isUpload)
 			_filePath = _documentRoot;
 		else {
 			_filePath = _documentRoot + "/" + _location.default_files[0];
 		}
 	} else {
-		std::string uri = _request.getUri().substr(_location.uri.length());
+		std::string uri = (*_request).getUri().substr(_location.uri.length());
 		_filePath = _documentRoot + "/" + uri;
 	}
 }
 
 void Response::prepareEnvironment(void) {
-	std::string uri = _request.getUri();
+	std::string uri = (*_request).getUri();
 	size_t queryPos = uri.find("?");
 
 	envVars["GATEWAY_INTERFACE"] = "CGI/1.1";
 	envVars["SERVER_PROTOCOL"] = "HTTP/1.1";
-	envVars["REQUEST_METHOD"] = _request.getMethod();
-	envVars["CONTENT_LENGTH"] = std::to_string(_request.getBody().length());
+	envVars["REQUEST_METHOD"] = (*_request).getMethod();
+	envVars["CONTENT_LENGTH"] = std::to_string((*_request).getBody().length());
 
 	size_t pyPos = uri.find(".py");
 	if (pyPos != std::string::npos) {
@@ -315,7 +329,7 @@ void Response::prepareEnvironment(void) {
 	envVars["REMOTE_PORT"] = std::to_string(_clientState.clientPort);
 	envVars["REMOTE_ADDR"] = _clientState.clientIPAddress;
 
-	auto headers = _request.getHeaders();
+	auto headers = (*_request).getHeaders();
 	for (const auto& header : headers) {
 		std::string key = header.first;
 		std::string upper_key = key;
@@ -342,13 +356,13 @@ void Response::executeCgi() {
 	cgiStdoutPipe[1] = -1;
 	prepareEnvironment();
 
-	scriptFileName = _request.getUri().substr(0, (_request.getUri().find(".py") + 3));
+	scriptFileName = (*_request).getUri().substr(0, ((*_request).getUri().find(".py") + 3));
 	scriptFileName = scriptFileName.substr(scriptFileName.find_last_of("/") + 1);
 
 	scriptDirectoryPath = _filePath.substr(0, _filePath.find_last_of("/")).c_str();
 
-	print_log(WHITE, "[DEBUG] cgi started. script: " + scriptFileName
-			+ ", path: " + scriptDirectoryPath);
+	// print_log(WHITE, "[DEBUG] cgi started. script: " + scriptFileName
+	// 		+ ", path: " + scriptDirectoryPath);
 	if (pipe(cgiStdinPipe) == -1 || pipe(cgiStdoutPipe) == -1) {
 		throw std::runtime_error("Falied to create CGI pipes");
 	}
@@ -364,7 +378,6 @@ void Response::executeCgi() {
 	} else {
 		cgiParentProcess();
 	}
-
 }
 
 void Response::cgiChildProcess() {
@@ -382,7 +395,6 @@ void Response::cgiChildProcess() {
 	char *argv[] = {(char *)"/usr/bin/python3", (char *)scriptFileName.c_str(), NULL};
 	print_log(WHITE, "[DEBUG] executing script with python...");
 	execve("/usr/bin/python3", argv, envp);
-
 	exit(1);
 }
 
@@ -396,14 +408,14 @@ void Response::cgiParentProcess() {
 	_clientState.cgiInputFd = cgiStdinPipe[1];
 	_clientState.cgiOutputFd = cgiStdoutPipe[0];
 
-	if (!_request.getBody().empty()) {
+	if (!(*_request).getBody().empty()) {
 		KqueueManager::registerEvent(_clientState.cgiInputFd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 	}
 	KqueueManager::registerEvent(_clientState.cgiOutputFd, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
 }
 
-void writeToCgiStdin(ClientState& clientState) {
-	print_log(BLACK, "[FUNC] writeToCgiStdin");
+void Response::writeToCgiStdin(ClientState& clientState) {
+	// print_log(BLACK, "[FUNC] writeToCgiStdin");
 	if (clientState.cgiInputFd < 0) return;
 
 	if (clientState.request->getBody().empty()) {
@@ -432,9 +444,9 @@ bool isCgiFinished(ClientState& clientState) {
 
 	if (clientState.cgiPid <= 0) return true;
 	int status;
-	print_log(WHITE, "[DEBUG] calling waitpid...");
+	// print_log(WHITE, "[DEBUG] calling waitpid...");
 	pid_t result = waitpid(clientState.cgiPid, &status, WNOHANG);
-	print_log(WHITE, "[DEBUG] waitpid returned.");
+	// print_log(WHITE, "[DEBUG] waitpid returned.");
 	if (result == 0) {
 		return false;
 	} else if (result == clientState.cgiPid) {
@@ -445,9 +457,9 @@ bool isCgiFinished(ClientState& clientState) {
 	}
 }
 
-void readFromCgiStdout(ClientState& clientState) {
-	print_log(BLACK, "[FUNC] readFromCgiStdout");
-	if (clientState.cgiOutputFd < 0) return;
+bool Response::readFromCgiStdout(ClientState& clientState) {
+	// print_log(BLACK, "[FUNC] readFromCgiStdout");
+	if (clientState.cgiOutputFd < 0) return false;//!!!
 
 	char buffer[4096];
 	ssize_t bytesRead = read(clientState.cgiOutputFd, buffer, sizeof(buffer));
@@ -455,14 +467,13 @@ void readFromCgiStdout(ClientState& clientState) {
 
 	// problems with kq here >>>
 	std::string response = buffer;
-	// print_log(WHITE, "parent has received: " + response);
+	// print_log(RED, "cgi out: " + std::to_string(bytesRead));
 
 	if (bytesRead > 0) {
-		// print_log(BLACK, "[DEBUG] bytes > 0.");
 		if (clientState.responseBuffer.empty())
 			clientState.responseBuffer = "HTTP/1.1 200 OK\r\n";
 		clientState.responseBuffer += response;
-		// KqueueManager::registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);
+		return false;
 	} else if (bytesRead == 0) {
 		KqueueManager::registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);//?
 		KqueueManager::registerEvent(clientState.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);//?
@@ -474,21 +485,22 @@ void readFromCgiStdout(ClientState& clientState) {
 		} else {
 			print_log(WHITE, "[DEBUG] script finished. returning response.");
 		}
+		return true;
 	} else {
 		std::cerr << "[ERROR] Error Occurred while reading from cgi stdout" << std::endl;
 		KqueueManager::registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);
 		clientState.responseBuffer.erase();
+		print_log(RED, "[ERROR] readFromCgiStdout");
 		clientState.responseBuffer = get_error_response(500, clientState);
 		KqueueManager::registerEvent(clientState.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);//?
 		close(clientState.cgiOutputFd);
 		clientState.cgiOutputFd = -1;
+		return false;
 	}
 }
 
 
 // Getters
-RequestParser&	Response::get_request(void) {return _request;}
+RequestParser&	Response::get_request(void) {return (*_request);}
 
 int Response::get_status(void) {return _statuscode;}
-
-Response::~Response() {}

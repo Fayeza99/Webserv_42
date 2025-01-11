@@ -26,7 +26,8 @@ class Server {
 	private:
 		std::vector<ServerConfig> serverConfigs;
 		std::map<int, ServerConfig> serverSockets;
-
+		RequestParser *_request;
+		Response *_response;
 
 		void setNonBlocking(int fd);
 		void removeClient(int clientSocket);
@@ -42,6 +43,7 @@ class Server {
 
 	public:
 		Server();
+		~Server();
 
 		void configure(const std::string& configFilePath);
 		void setup();
