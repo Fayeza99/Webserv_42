@@ -29,8 +29,8 @@ Response::~Response() {
 std::string	Response::get_response(void) {
 	if (_location.redirect == true)
 		return handle_redir();
-	if (!method_allowed()) 
-		return get_error_response(405, _clientState);
+	if (!method_allowed())
+		return ErrorHandler::createResponse(405, _clientState.serverConfig.error_pages);
 	if ((*_request).getMethod() == "DELETE")
 		return handle_delete();
 	if ((*_request)._isUpload)
@@ -46,10 +46,10 @@ std::string	Response::get_response(void) {
 std::string Response::handle_delete(void) {
 	char realPath[PATH_MAX];
 	if (realpath(_filePath.c_str(), realPath) == NULL)
-		return get_error_response(404, _clientState);
+		return ErrorHandler::createResponse(404, _clientState.serverConfig.error_pages);
 	if (!std::remove(_filePath.c_str()))
 		return ((*_request).getHttpVersion() + " 204 No Content\r\n\r\n");
-	return (get_error_response(403, _clientState));
+	return ErrorHandler::createResponse(403, _clientState.serverConfig.error_pages);
 }
 
 /**
@@ -78,7 +78,7 @@ std::string Response::handle_upload(void) {
 		return (response.str());
 	}
 	print_log(RED, "[ERROR] handleUpload");
-	return (get_error_response(500, _clientState));
+	return ErrorHandler::createResponse(500, _clientState.serverConfig.error_pages);
 }
 
 /**
@@ -144,66 +144,6 @@ bool Response::method_allowed(void) {
 	return isSupported;
 }
 
-/**
- * @brief Provides the correct error file on the bases of errorCode provided
- *
- * @param errorCode used for deciding which file to serve
- * @return std::string file in the form of string as response
- */
-std::string get_error_response(const int errorCode, ClientState& _clientState) {
-	std::string errorMessage;
-	std::string errorFilePath;
-
-	std::map<int, std::string> default_error_pages = _clientState.serverConfig.error_pages;
-
-	switch (errorCode)
-	{
-	case 403:
-		errorMessage = " 403 Forbidden\r\n";
-		errorFilePath = "www/error/403.html";
-		break;
-	case 404:
-		errorMessage = " 404 Not Found\r\n";
-		errorFilePath = "www/error/404.html";
-		break;
-	case 405:
-		errorMessage = " 405 Method Not Allowed\r\n";
-		errorFilePath = "www/error/405.html";
-		break;
-	case 500:
-		errorMessage = " 500 Internal Server Error\r\n";
-		errorFilePath = "www/error/500.html";
-		break;
-	default:
-		errorMessage = " 500 Internal Server Error\r\n";
-		errorFilePath = "www/error/500.html";
-		break;
-	}
-
-	auto it = default_error_pages.find(errorCode);
-	if (it != default_error_pages.end()) {
-		std::string customErrorPath = it->second;
-		char resolvedPath[PATH_MAX];
-		if (realpath(customErrorPath.c_str(), resolvedPath) != NULL) {
-			errorFilePath = customErrorPath;
-		}
-	}
-
-	char resolvedPath[PATH_MAX];
-	realpath(errorFilePath.c_str(), resolvedPath);
-	std::ostringstream response;
-	std::ifstream file(resolvedPath);
-	std::stringstream buffer;
-	buffer << file.rdbuf();
-	std::string body = buffer.str();
-	file.close();
-	response	<< _clientState.request->getHttpVersion() << errorMessage
-				<< "Content-Length: " << body.length() << "\r\n"
-				<< "Connection: close\r\n\r\n"
-				<< body;
-
-	return response.str();
-}
 
 /**
  * @brief Serves a static file in response to an HTTP GET request.
@@ -234,12 +174,12 @@ std::string Response::serve_static_file() {
 	std::ostringstream response;
 
 	if (!method_allowed() || (*_request).getMethod() != "GET") {
-		return get_error_response(405, _clientState);
+		return ErrorHandler::createResponse(405, _clientState.serverConfig.error_pages);
 	}
 
 	char resolvedPath[PATH_MAX];
 	if (realpath(_filePath.c_str(), resolvedPath) == NULL) {
-		return get_error_response(404, _clientState);
+		return ErrorHandler::createResponse(404, _clientState.serverConfig.error_pages);
 	}
 
 	std::string resolvedFilePath(resolvedPath);
@@ -247,17 +187,17 @@ std::string Response::serve_static_file() {
 	char resolvedDocRoot[PATH_MAX];
 	if (realpath(_documentRoot.c_str(), resolvedDocRoot) == NULL) {
 		std::cerr << "[ERROR] Failed to resolve document root: " << _documentRoot << std::endl;
-		return get_error_response(500, _clientState);
+		return ErrorHandler::createResponse(500, _clientState.serverConfig.error_pages);
 	}
 
 	std::string resolvedDocRootStr(resolvedDocRoot);
 	if (resolvedFilePath.find(resolvedDocRootStr) != 0) {
-		return get_error_response(403, _clientState);
+		return ErrorHandler::createResponse(403, _clientState.serverConfig.error_pages);
 	}
 
 	std::ifstream file(resolvedFilePath.c_str(), std::ios::in | std::ios::binary);
 	if (!file.is_open()) {
-		return get_error_response(404, _clientState);
+		return ErrorHandler::createResponse(404, _clientState.serverConfig.error_pages);
 	}
 
 	std::ostringstream bodyStream;
@@ -490,7 +430,7 @@ bool Response::readFromCgiStdout(ClientState& clientState) {
 		KqueueManager::registerEvent(clientState.cgiOutputFd, EVFILT_READ, EV_DELETE);
 		clientState.responseBuffer.erase();
 		print_log(RED, "[ERROR] readFromCgiStdout");
-		clientState.responseBuffer = get_error_response(500, clientState);
+		clientState.responseBuffer = ErrorHandler::createResponse(500, clientState.serverConfig.error_pages);
 		KqueueManager::registerEvent(clientState.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);//?
 		close(clientState.cgiOutputFd);
 		clientState.cgiOutputFd = -1;

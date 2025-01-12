@@ -14,6 +14,7 @@
 
 # include "RequestParser.hpp"
 # include "ClientState.hpp"
+# include "ErrorHandler.hpp"
 # include "utils.hpp"
 
 # define PATH_MAX 1024
@@ -68,7 +69,6 @@ private:
 	int _statuscode;
 };
 
-std::string get_error_response(const int errorCode, ClientState& _clientState);
 bool isCgiFinished(ClientState& clientState);
 
 
