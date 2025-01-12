@@ -64,9 +64,9 @@ std::string Response::handle_upload(void) {
 		if (file.filename.empty()) {
 			continue ;
 		}
-		std::string openfile = _filePath + "/" + file.filename;
-		std::ofstream outfile(openfile);
-		outfile << file.content << std::endl;
+		std::string path = _filePath + "/" + file.filename;
+		std::ofstream outfile(path);
+		outfile << file.content;
 		outfile.close();
 		success = true;
 	}
@@ -75,7 +75,6 @@ std::string Response::handle_upload(void) {
 			 << " 201 Created\r\n"
 			 << "Content-Length: 0\r\n"
 			 << "Connection: close\r\n\r\n";
-		
 		return (response.str());
 	}
 	print_log(RED, "[ERROR] handleUpload");

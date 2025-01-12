@@ -273,7 +273,7 @@ void Server::handleAccept(int serverSocket)
  */
 void Server::handleRead(int clientSocket)
 {
-	// print_log(BLACK, "[FUNC] handleRead");
+	print_log(BLACK, "[FUNC] handleRead");
 	char buffer[4096];
 	ssize_t bytesRead = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
 
@@ -284,24 +284,20 @@ void Server::handleRead(int clientSocket)
 		clients[clientSocket].requestBuffer += buffer;
 		// print_log(BLACK, clients[clientSocket].requestBuffer);
 		_request = new RequestParser(clients[clientSocket].requestBuffer);
-		// auto isCL = request.getHeaders().find("Content-Length");
-		// if (isCL != request.getHeaders().end()) {
-		// 	unsigned long CL = stoi(isCL->second);
-		// 	// std::cout << "CL: " << CL << std::endl;
-		// 	if (CL > 0 && request.getBody().length() < CL) {
-		// 		return ;
-		// 	}
-		// }
+		auto isCL = (*_request).getHeaders().find("Content-Length");
+		if (isCL != (*_request).getHeaders().end()) {
+			unsigned long CL = stoi(isCL->second);
+			if (CL > 0 && (*_request).getBody().length() < CL) {
+				print_log(RED, "Expecting another handleRead");
+				delete _request;
+				return ;
+			}
+		}
 		clients[clientSocket].request = _request;
 		_response = new Response(clients[clientSocket]);
-		if ((*_request).isCgiRequest())
-		{
+		if ((*_request).isCgiRequest()) {
 			(*_response).executeCgi();
-			print_log(WHITE, "executeCgi returned");
-		}
-		else
-		{
-			// print_log(WHITE, "[DEBUG] Request is not for cgi (.py).");
+		} else {
 			clients[clientSocket].responseBuffer = (*_response).get_response();
 			std::cout << BLACK << "RESPONSE\n" << clients[clientSocket].responseBuffer;
 			KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);

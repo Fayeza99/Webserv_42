@@ -157,39 +157,34 @@ FileUpload::FileUpload(const FileUpload &other)
 
 void FileUpload::set_name(void)
 {
-	size_t pos = headers["Content-Disposition"].find("name=\"");
-	if (pos == std::string::npos)
-	{
-		name = "";
-		return;
+	name = "";
+	size_t pos = headers["Content-Disposition"].find(" name=\"");
+	if (pos != std::string::npos) {
+		name = headers["Content-Disposition"].substr(pos + 7);
+		name = name.substr(0, name.find("\""));
 	}
-	name = headers["Content-Disposition"].substr(pos + 6);
-	name = name.substr(0, name.find("\""));
 }
 
 void FileUpload::set_filename(void)
 {
-	size_t pos = headers["Content-Disposition"].find("filename=\"");
-	if (pos == std::string::npos)
-	{
-		filename = "";
-		return;
+	filename = "";
+	size_t pos = headers["Content-Disposition"].find(" filename=\"");
+	if (pos != std::string::npos) {
+		filename = headers["Content-Disposition"].substr(pos + 11);
+		filename = filename.substr(0, filename.find("\""));
 	}
-	filename = headers["Content-Disposition"].substr(pos + 10);
-	filename = filename.substr(0, filename.find("\""));
 }
 
 std::istringstream &FileUpload::get_stream(void) { return body_stream; }
 
 void RequestParser::parseUpload(void)
 {
-
+	std::string line;
 	std::string b(body);
 	std::vector<std::string> parts;
 	set_boundary();
 	while (!b.empty())
 	{
-
 		size_t next = b.find(_boundary);
 		parts.push_back(b.substr(0, next));
 		if (next != std::string::npos)
@@ -204,9 +199,13 @@ void RequestParser::parseUpload(void)
 			continue;
 		FileUpload upload(p);
 		parse_headers(upload.get_stream(), upload.headers);
-		upload.content = upload.get_stream().str();
 		upload.set_name();
 		upload.set_filename();
+		while (std::getline(upload.get_stream(), line))
+			upload.content += line + '\n';
+		size_t pos = upload.content.find_last_of("--");
+		if (pos != std::string::npos)
+			upload.content = upload.content.substr(0, pos-3);
 		_upload.push_back(upload);
 	}
 }
