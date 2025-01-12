@@ -4,7 +4,7 @@
 #include "utils.hpp"
 #include "Parser.hpp"
 #include "RequestParser.hpp"
-#include "Response.hpp"
+#include "ResponseControl.hpp"
 #include "ClientState.hpp"
 #include "KqueueManager.hpp"
 
@@ -22,32 +22,33 @@
 #include <string>
 #include <iostream>
 
-class Server {
-	private:
-		std::vector<ServerConfig> serverConfigs;
-		std::map<int, ServerConfig> serverSockets;
-		RequestParser *_request;
-		Response *_response;
+class Server
+{
+private:
+	std::vector<ServerConfig> serverConfigs;
+	std::map<int, ServerConfig> serverSockets;
+	RequestParser *_request;
+	// Response *_response;
+	ResponseControl *_response;
 
-		void setNonBlocking(int fd);
-		void removeClient(int clientSocket);
-		void handleAccept(int serverSocket);
-		void handleRead(int clientSocket);
-		void handleWrite(int clientSocket);
-		void checkTimeouts();
-		void processEvent(struct kevent& event);
-		void createServerSocket(ServerConfig &config);
-		ClientState* findClientByPipeFd(int fd);
+	void setNonBlocking(int fd);
+	void removeClient(int clientSocket);
+	void handleAccept(int serverSocket);
+	void handleRead(int clientSocket);
+	void handleWrite(int clientSocket);
+	void checkTimeouts();
+	void processEvent(struct kevent &event);
+	void createServerSocket(ServerConfig &config);
+	ClientState *findClientByPipeFd(int fd);
 
-		std::map<int, ClientState> clients;
+	std::map<int, ClientState> clients;
 
-	public:
-		Server();
-		~Server();
+public:
+	Server();
+	~Server();
 
-		void configure(const std::string& configFilePath);
-		void setup();
-		void run();
-		int getServerSocket() const;
-
+	void configure(const std::string &configFilePath);
+	void setup();
+	void run();
+	int getServerSocket() const;
 };

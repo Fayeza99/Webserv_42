@@ -24,8 +24,9 @@ public:
 	std::map<std::string, std::string> cgi_paths;
 
 	LocationConfig();
+	LocationConfig(const LocationConfig &c);
 	void getLocation(const ServerConfig &serverConfig, const std::string &uri);
-	LocationConfig& operator=( const LocationConfig& c );
+	LocationConfig &operator=(const LocationConfig &c);
 };
 
 class ServerConfig

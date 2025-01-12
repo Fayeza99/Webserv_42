@@ -1,11 +1,9 @@
 #include "server.hpp"
 
-Server::Server() {
-	_request = NULL;
-	_response = NULL;
-}
+Server::Server() : _request(nullptr), _response(nullptr) {}
 
-Server::~Server() {
+Server::~Server()
+{
 	if (_request)
 		delete _request;
 	if (_response)
@@ -245,16 +243,13 @@ void Server::handleAccept(int serverSocket)
 	KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
 
 	const ServerConfig &config = serverSockets[serverSocket];
-	clients.emplace(clientSocket, ClientState(config, clientSocket));//!!!
+	clients.emplace(clientSocket, ClientState(config, clientSocket)); //!!!
 
 	std::string clientip(inet_ntoa(clientAddr.sin_addr));
 	clients[clientSocket].clientIPAddress = clientip;
 	clients[clientSocket].clientPort = ntohs(clientAddr.sin_port);
 
-	print_log(WHITE, "Accepted new connection from "
-		+ clients[clientSocket].clientIPAddress + ":"
-		+ std::to_string(clients[clientSocket].clientPort)
-		+ ", socket " + std::to_string(clientSocket));
+	print_log(WHITE, "Accepted new connection from " + clients[clientSocket].clientIPAddress + ":" + std::to_string(clients[clientSocket].clientPort) + ", socket " + std::to_string(clientSocket));
 	// std::cout << "Accepted new connection from "
 	// 		  << clients[clientSocket].clientIPAddress << ":"
 	// 		  << clients[clientSocket].clientPort
@@ -285,25 +280,24 @@ void Server::handleRead(int clientSocket)
 		// print_log(BLACK, clients[clientSocket].requestBuffer);
 		_request = new RequestParser(clients[clientSocket].requestBuffer);
 		auto isCL = (*_request).getHeaders().find("Content-Length");
-		if (isCL != (*_request).getHeaders().end()) {
+		if (isCL != (*_request).getHeaders().end())
+		{
 			unsigned long CL = stoi(isCL->second);
-			if (CL > 0 && (*_request).getBody().length() < CL) {
+			if (CL > 0 && (*_request).getBody().length() < CL)
+			{
 				print_log(RED, "Expecting another handleRead");
 				delete _request;
-				return ;
+				return;
 			}
 		}
 		clients[clientSocket].request = _request;
-		_response = new Response(clients[clientSocket]);
-		if ((*_request).isCgiRequest()) {
-			(*_response).executeCgi();
-		} else {
-			clients[clientSocket].responseBuffer = (*_response).get_response();
-			std::cout << BLACK << "RESPONSE\n" << clients[clientSocket].responseBuffer;
-			KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+		_response = new ResponseControl(clients[clientSocket]);
+		_response->getResponse();
+		if (!(*_request).isCgiRequest())
+		{
 			delete _response;
 			delete _request;
-			clients[clientSocket].request = NULL;
+			clients[clientSocket].request = nullptr;
 		}
 	}
 	else if (bytesRead == 0)
@@ -383,9 +377,7 @@ void Server::processEvent(struct kevent &event)
 	if (event.flags & EV_ERROR)
 	{
 		if (serverSockets.count(fd))
-		{
 			std::cerr << "[ERROR] Error on server socket: " << strerror(static_cast<int>(event.data)) << std::endl;
-		}
 		else
 		{
 			int clientSocket = static_cast<int>(event.ident);
@@ -397,25 +389,18 @@ void Server::processEvent(struct kevent &event)
 	else if (serverSockets.count(fd))
 	{
 		if (event.filter == EVFILT_READ)
-		{
 			handleAccept(fd);
-		}
 	}
 	else if (clients.count(fd))
 	{
 		if (event.filter == EVFILT_READ)
-		{
 			handleRead(fd);
-		}
 		else if (event.filter == EVFILT_WRITE)
-		{
 			handleWrite(fd);
-		}
 	}
 	else
 	{
 		ClientState *client = findClientByPipeFd(fd);
-
 		if (!client)
 		{
 			std::cerr << "[ERROR] Unknown fd in processEvent: " << fd << std::endl;
@@ -424,15 +409,16 @@ void Server::processEvent(struct kevent &event)
 
 		if (event.filter == EVFILT_READ)
 		{
-			bool finished = (*_response).readFromCgiStdout(*client);
-			if (finished) {
-				delete _response;
+			bool finished = CgiHandler::readFromCgiStdout(*client);
+			if (finished)
+			{
 				delete _request;
+				delete _response;
 			}
 		}
 		else if (event.filter == EVFILT_WRITE)
 		{
-			(*_response).writeToCgiStdin(*client);
+			CgiHandler::writeToCgiStdin(*client);
 		}
 	}
 }
