@@ -15,7 +15,7 @@ RequestParser::~RequestParser() {
 	print_log(BLUE, "RequestParser Destructor");
 }
 
-bool RequestParser::isValidMethod(const std::string &methodStr)
+bool RequestParser::isValidMethod(const std::string &methodStr) const
 {
 	static const std::set<std::string> valid_methods = {
 		"GET", "POST", "PUT", "DELETE"};
@@ -175,8 +175,6 @@ void FileUpload::set_filename(void)
 	}
 }
 
-std::istringstream &FileUpload::get_stream(void) { return body_stream; }
-
 void RequestParser::parseUpload(void)
 {
 	std::string line;
@@ -198,10 +196,10 @@ void RequestParser::parseUpload(void)
 		if (p == "--")
 			continue;
 		FileUpload upload(p);
-		parse_headers(upload.get_stream(), upload.headers);
+		parse_headers(upload.body_stream, upload.headers);
 		upload.set_name();
 		upload.set_filename();
-		while (std::getline(upload.get_stream(), line))
+		while (std::getline(upload.body_stream, line))
 			upload.content += line + '\n';
 		size_t pos = upload.content.find_last_of("--");
 		if (pos != std::string::npos)

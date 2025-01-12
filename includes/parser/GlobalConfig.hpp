@@ -17,12 +17,13 @@ public:
 	std::string uri;
 	std::string document_root;
 	bool autoIndex;
-	bool redirect = false;
+	bool redirect;
 	std::string redirect_uri;
 	std::vector<std::string> default_files;
 	std::set<std::string> supported_methods;
 	std::map<std::string, std::string> cgi_paths;
-	LocationConfig() : uri(""), document_root("") {}
+
+	LocationConfig();
 	void getLocation(const ServerConfig &serverConfig, const std::string &uri);
 	LocationConfig& operator=( const LocationConfig& c );
 };
@@ -36,7 +37,7 @@ public:
 	std::map<int, std::string> error_pages;
 	std::vector<LocationConfig> locations;
 
-	ServerConfig() : listen_port(80) {}
+	ServerConfig();
 };
 
 class GlobalConfig
@@ -45,5 +46,5 @@ public:
 	std::vector<ServerConfig> servers;
 	unsigned long client_max_body_size;
 
-	GlobalConfig() : client_max_body_size(8192) {}
+	GlobalConfig();
 };

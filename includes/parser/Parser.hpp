@@ -27,6 +27,6 @@ public:
 	Parser(const std::string &input);
 	GlobalConfig parse();
 	ServerConfig parseServer();
-	std::vector<int> initializeSockets(const GlobalConfig &config);
+	// std::vector<int> initializeSockets(const GlobalConfig &config);
 
 };

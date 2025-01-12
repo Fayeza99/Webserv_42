@@ -5,7 +5,8 @@
 #include "RequestParser.hpp"
 #include "KqueueManager.hpp"
 
-struct ClientState {
+struct ClientState
+{
 	int fd;
 	std::string requestBuffer;
 	std::string responseBuffer;

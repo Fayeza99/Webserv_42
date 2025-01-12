@@ -7,11 +7,10 @@
 #include <unordered_map>
 #include <vector>
 
-class FileUpload {
-	private:
-		std::istringstream body_stream;
-
+class FileUpload
+{
 	public:
+		std::istringstream body_stream;
 		std::unordered_map<std::string, std::string> headers;
 		std::string content;
 		std::string name;
@@ -21,11 +20,10 @@ class FileUpload {
 		FileUpload(const FileUpload& other);
 		void set_name(void);
 		void set_filename(void);
-		std::istringstream& get_stream(void);
-
 };
 
-class RequestParser {
+class RequestParser
+{
 	private:
 		std::string _request;
 		std::string method;
@@ -39,13 +37,13 @@ class RequestParser {
 
 		void parseRequest(const std::string& request);
 
-		void parseUpload(void);
 		void parse_headers(std::istringstream& request_stream, std::unordered_map<std::string, std::string>& headers);
+		void parseUpload(void);
 		void set_boundary(void);
 
 	public:
 		bool _isUpload;
-		bool isValidMethod(const std::string& methodStr);
+		bool isValidMethod(const std::string& methodStr) const;
 		bool isCgiRequest(void);
 		std::string trim(const std::string& str);
 

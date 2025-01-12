@@ -1,7 +1,11 @@
 #include "Response.hpp"
 
-Response::Response(ClientState& clientState) : _clientState(clientState), _location(), _statuscode(200) {
+Response::Response(ClientState& clientState) : _clientState(clientState), _location(), _response(""), _filePath(""), cgiPid(-1), envp(nullptr) {
 	print_log(BLUE, "Response Constructor");
+	cgiStdinPipe[0] = -1;
+	cgiStdinPipe[1] = -1;
+	cgiStdoutPipe[0] = -1;
+	cgiStdoutPipe[1] = -1;
 	_request = clientState.request;
 	_location.getLocation(_clientState.serverConfig, (*_request).getUri());
 	_documentRoot = _location.document_root;
@@ -9,12 +13,12 @@ Response::Response(ClientState& clientState) : _clientState(clientState), _locat
 	if (!_location.redirect){
 		setFilePath();
 	}
-	print_log(BLACK, "[REQUEST] Method=" + (*_request).getMethod() + ", Uri=" + (*_request).getUri() + ", Path=" + _filePath);
-	std::cout << BLACK << "HEADERS";
-	for (auto h : (*_request).getHeaders()) {
-		std::cout << "\n\t" << h.first << ":" << h.second;
-	}
-	std::cout << "\nBODY\n" << (*_request).getBody() << "\n" << RESET;
+	// print_log(BLACK, "[REQUEST] Method=" + (*_request).getMethod() + ", Uri=" + (*_request).getUri() + ", Path=" + _filePath);
+	// std::cout << BLACK << "HEADERS";
+	// for (auto h : (*_request).getHeaders()) {
+	// 	std::cout << "\n\t" << h.first << ":" << h.second;
+	// }
+	// std::cout << "\nBODY\n" << (*_request).getBody() << "\n" << RESET;
 }
 
 Response::~Response() {
@@ -48,8 +52,8 @@ std::string Response::handle_delete(void) {
 	if (realpath(_filePath.c_str(), realPath) == NULL)
 		return get_error_response(404, _clientState);
 	if (!std::remove(_filePath.c_str()))
-		return ((*_request).getHttpVersion() + " 204 No Content\r\n\r\n");
-	return (get_error_response(403, _clientState));
+		return (*_request).getHttpVersion() + " 204 No Content\r\n\r\n";
+	return get_error_response(403, _clientState);
 }
 
 /**
@@ -75,10 +79,10 @@ std::string Response::handle_upload(void) {
 			 << " 201 Created\r\n"
 			 << "Content-Length: 0\r\n"
 			 << "Connection: close\r\n\r\n";
-		return (response.str());
+		return response.str();
 	}
 	print_log(RED, "[ERROR] handleUpload");
-	return (get_error_response(500, _clientState));
+	return get_error_response(500, _clientState);
 }
 
 /**
@@ -500,6 +504,4 @@ bool Response::readFromCgiStdout(ClientState& clientState) {
 
 
 // Getters
-RequestParser&	Response::get_request(void) {return (*_request);}
-
-int Response::get_status(void) {return _statuscode;}
+RequestParser&	Response::get_request(void) {return *_request;}

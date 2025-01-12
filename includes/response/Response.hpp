@@ -19,14 +19,14 @@
 # define PATH_MAX 1024
 # define BUFFER_SIZE 1024
 
-class Response {
+class Response
+{
 public:
 	Response(ClientState& clientState);
 	~Response();
 
 	std::string get_response(void);
 	RequestParser& get_request(void);
-	int get_status(void);
 	void executeCgi();
 	void writeToCgiStdin(ClientState& clientState);
 	bool readFromCgiStdout(ClientState& clientState);
@@ -65,11 +65,11 @@ private:
 
 	std::map<std::string, std::string> _headers;
 	std::string _body;
-	int _statuscode;
 };
 
 std::string get_error_response(const int errorCode, ClientState& _clientState);
 bool isCgiFinished(ClientState& clientState);
+
 
 
 // void	test_1(ClientState& clientstate);

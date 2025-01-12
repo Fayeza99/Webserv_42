@@ -4,13 +4,9 @@ Token::Token(TokenType type, std::string value) : type(type), value(value) {}
 
 Lexer::Lexer(const std::string &input) : input(input) {}
 
-size_t Lexer::getPosition()
-{
-	return pos;
-}
+size_t Lexer::getPosition() {return pos;}
 
-char Lexer::nextChar()
-{
+char Lexer::nextChar() {
 	return pos < input.size() ? input[pos++] : '\0';
 }
 
