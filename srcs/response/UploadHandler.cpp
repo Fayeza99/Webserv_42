@@ -3,12 +3,16 @@
 
 UploadHandler::UploadHandler(ClientState &client) : AResponseHandler(client), _boundary("")
 {
+	print_log(BLUE, "UploadHandler Constructor");
 	setFilePath();
 	setBoundary();
 	parseBody();
 }
 
-UploadHandler::~UploadHandler(void) {}
+UploadHandler::~UploadHandler(void)
+{
+	print_log(BLUE, "UploadHandler Destructor");
+}
 
 void UploadHandler::getResponse(void)
 {

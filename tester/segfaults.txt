@@ -1,0 +1,12 @@
+001 - uploaded file, went back to upload.html, refreshed, segfault.
+reason: timed out client received request and failed?
+OR removeClient is done differently in case of timeout. changed checkTimeouts().
+
+17:00:04 --- Response sent
+17:00:04 --- [FUNC] handleRead
+17:00:04 --- Client 5 disconnected
+17:00:52 --- Accepted new connection from 127.0.0.1:53982, socket 5
+17:00:52 --- Client 6 timed out
+zsh: segmentation fault  ./webserv
+
+002 - 

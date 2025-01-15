@@ -277,7 +277,6 @@ void Server::handleRead(int clientSocket)
 		buffer[bytesRead] = '\0';
 		clients[clientSocket].lastActive = time(nullptr);
 		clients[clientSocket].requestBuffer += buffer;
-		// print_log(BLACK, clients[clientSocket].requestBuffer);
 		_request = new RequestParser(clients[clientSocket].requestBuffer);
 		auto isCL = (*_request).getHeaders().find("Content-Length");
 		if (isCL != (*_request).getHeaders().end())
@@ -291,6 +290,7 @@ void Server::handleRead(int clientSocket)
 			}
 		}
 		clients[clientSocket].request = _request;
+		print_log(WHITE, "new Request: Method=" + _request->getMethod() + ", Uri=" + _request->getUri());
 		_response = new ResponseControl(clients[clientSocket]);
 		_response->getResponse();
 		if (!(*_request).isCgiRequest())
@@ -330,7 +330,7 @@ void Server::handleWrite(int clientSocket)
 	if (!response.empty())
 	{
 		ssize_t bytesSent = send(clientSocket, response.c_str(), response.size(), 0);
-		print_log(BLACK, "Response sent");
+		print_log(WHITE, "Response sent");
 		clients[clientSocket].requestBuffer.clear();
 		clients[clientSocket].responseBuffer.clear();
 		if (bytesSent > 0)
@@ -445,7 +445,7 @@ ClientState *Server::findClientByPipeFd(int fd)
 void Server::checkTimeouts()
 {
 	time_t currentTime = time(nullptr);
-	const int TIMEOUT_DURATION = 30; // seconds
+	const int TIMEOUT_DURATION = 10; // seconds
 
 	for (auto it = clients.begin(); it != clients.end();)
 	{
@@ -453,7 +453,10 @@ void Server::checkTimeouts()
 		{
 			int clientSocket = it->first;
 			print_log(WHITE, "Client " + std::to_string(clientSocket) + " timed out");
-			removeClient(clientSocket);
+			// removeClient(clientSocket);
+			KqueueManager::deregisterEvent(clientSocket);
+			close(clientSocket);
+			// clients.erase(clientSocket);
 			it = clients.erase(it);
 		}
 		else

@@ -2,6 +2,7 @@
 
 CgiHandler::CgiHandler(ClientState &client) : AResponseHandler(client)
 {
+	print_log(BLUE, "CgiHandler Constructor");
 	cgiStdinPipe[0] = -1;
 	cgiStdinPipe[1] = -1;
 	cgiStdoutPipe[0] = -1;
@@ -14,7 +15,10 @@ CgiHandler::CgiHandler(ClientState &client) : AResponseHandler(client)
 	scriptDirectory = _filePath.substr(0, _filePath.find_last_of("/")).c_str();
 }
 
-CgiHandler::~CgiHandler(void) {}
+CgiHandler::~CgiHandler(void)
+{
+	print_log(BLUE, "CgiHandler Destructor");
+}
 
 void CgiHandler::getResponse(void)
 {
@@ -140,7 +144,7 @@ void CgiHandler::childProcess(void)
 	}
 
 	char *argv[] = {(char *)"/usr/bin/python3", (char *)scriptFileName.c_str(), NULL};
-	print_log(WHITE, "[DEBUG] executing script with python...");
+	print_log(BLACK, "[DEBUG] executing script with python...");
 	execve("/usr/bin/python3", argv, env.data());
 	exit(1);
 }
@@ -151,6 +155,7 @@ bool CgiHandler::isFinished(ClientState &client)
 		return true;
 	int status;
 	pid_t result = waitpid(client.cgiPid, &status, WNOHANG);
+	print_log(RED, "waitpid result = " + std::to_string(result));
 	if (result == 0)
 		return false;
 	else if (result == client.cgiPid)
@@ -222,7 +227,7 @@ bool CgiHandler::readFromCgiStdout(ClientState &client)
 		if (!isFinished(client))
 			print_log(RED, "[ERROR] Something went wrong in CGI, not finished.");
 		else
-			print_log(WHITE, "[DEBUG] script finished. returning response.");
+			print_log(BLACK, "[DEBUG] script finished. returning response.");
 		return true;
 	}
 	else

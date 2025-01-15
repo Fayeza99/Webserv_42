@@ -1,144 +1,43 @@
-test log
+tests for last commit: complete restructuring of response
 
-/testPost:
-11:08:43 --- Server is listening on port 8080
-11:08:48 --- [FUNC] processEvent
-11:08:48 --- [FUNC] handleAccept
-11:08:48 --- Accepted new connection from 127.0.0.1:55682, socket 5
-11:08:48 --- [FUNC] processEvent
-11:08:48 --- [FUNC] handleRead
-11:08:48 --- Request Parsed :)
-11:08:48 --- Requested Uri /testPost translates to file www/form.html
-11:08:48 --- [DEBUG] Request is not for cgi (.py).
-11:08:48 --- [FUNC] processEvent
-11:08:48 --- [FUNC] handleWrite
-11:08:48 --- sent response to client
-11:08:48 --- [FUNC] processEvent
-11:08:48 --- [FUNC] handleRead
-11:08:48 --- Client 5 disconnected
-11:08:48 --- [FUNC] processEvent
-11:08:48 --- [FUNC] handleAccept
-11:08:48 --- Accepted new connection from 127.0.0.1:55685, socket 5
-11:08:48 --- [FUNC] processEvent
-11:08:48 --- [FUNC] handleAccept
-11:08:48 --- Accepted new connection from 127.0.0.1:55686, socket 6
----
-[info] Modern browsers often open extra connections to a server after the first connection,
-even if those connections are not immediately used. This is intended to optimize performance
-for future requests but may appear confusing during debugging.
+TEST_01 - POST to cgi
+error: waitpid returned 0 but script was successful
+sometimes returns pid too, not consistent.
+-> isFinished() is useless as it is, because the response is sent anyway
 
-/cgi-bin/hello.py
-11:09:08 --- Server is listening on port 8080
-11:09:15 --- [FUNC] processEvent
-11:09:15 --- [FUNC] handleAccept
-11:09:15 --- Accepted new connection from 127.0.0.1:55741, socket 5
-11:09:15 --- [FUNC] processEvent
-11:09:15 --- [FUNC] handleAccept
-11:09:15 --- Accepted new connection from 127.0.0.1:55742, socket 6
-11:09:15 --- [FUNC] processEvent
-11:09:15 --- [FUNC] handleRead
-11:09:15 --- Request Parsed :)
-11:09:15 --- Requested Uri /cgi-bin/hello.py translates to file www/cgi-bin/hello.py
-11:09:15 --- [DEBUG] cgi started. script: hello.py, path: www/cgi-bin
-11:09:15 --- [DEBUG] executing script with python...
-11:09:15 --- [FUNC] processEvent
-11:09:15 --- [FUNC] readFromCgiStdout
-11:09:15 --- [FUNC] processEvent
-11:09:15 --- [FUNC] readFromCgiStdout
-11:09:15 --- [DEBUG] calling waitpid...
-11:09:15 --- [DEBUG] waitpid returned.
-11:09:15 --- [DEBUG] script finished. returning response.
-11:09:15 --- [FUNC] processEvent
-11:09:15 --- [FUNC] handleWrite
-11:09:15 --- sent response to client
-11:09:15 --- [FUNC] processEvent
-11:09:15 --- [FUNC] handleRead
-11:09:15 --- Client 5 disconnected
+16:19:49 --- Server is listening on port 3000
+16:19:53 --- Accepted new connection from 127.0.0.1:53635, socket 5
+16:19:53 --- Accepted new connection from 127.0.0.1:53636, socket 6
+16:19:53 --- RequestParser Constructor
+16:19:53 --- new Request: Method=POST, Uri=/cgi-bin/post_test.py
+16:19:53 --- Response Constructor
+16:19:53 --- CgiHandler Constructor
+16:19:53 --- [DEBUG] executing script with python...
+16:19:54 --- [ERROR] Something went wrong in CGI, not finished.
+16:19:54 --- RequestParser Destructor
+16:19:54 --- Response Destructor
+16:19:54 --- CgiHandler Destructor
+16:19:54 --- Response sent
+16:19:54 --- Client 5 disconnected
 
-/upload.html
-11:09:37 --- Server is listening on port 8080
-11:09:46 --- [FUNC] processEvent
-11:09:46 --- [FUNC] handleAccept
-11:09:46 --- Accepted new connection from 127.0.0.1:55804, socket 5
-11:09:46 --- [FUNC] processEvent
-11:09:46 --- [FUNC] handleRead
-11:09:46 --- Request Parsed :)
-11:09:46 --- Requested Uri /upload.html translates to file www/upload.html
-11:09:46 --- [DEBUG] Request is not for cgi (.py).
-11:09:46 --- [FUNC] processEvent
-11:09:46 --- [FUNC] handleWrite
-11:09:46 --- sent response to client
-11:09:46 --- [FUNC] processEvent
-11:09:46 --- [FUNC] handleRead
-11:09:46 --- Client 5 disconnected
----
-accept
-read and parse
-send and disconnect							// perfect so far, no open sockets
-[send upload to /meow]
-11:10:27 --- [FUNC] processEvent
-11:10:27 --- [FUNC] handleAccept
-11:10:27 --- Accepted new connection from 127.0.0.1:55890, socket 5
-11:10:27 --- [FUNC] processEvent
-11:10:27 --- [FUNC] handleAccept
-11:10:27 --- Accepted new connection from 127.0.0.1:55891, socket 6
-11:10:27 --- [FUNC] processEvent
-11:10:27 --- [FUNC] handleRead
-11:10:27 --- parsing upload
-11:10:27 --- Request Parsed :)
-11:10:27 --- Requested Uri /meow translates to file www/upload
-11:10:27 --- [DEBUG] Request is not for cgi (.py).
-11:10:27 --- [FUNC] processEvent
-11:10:27 --- [FUNC] handleWrite
-11:10:27 --- sent response to client
-11:10:27 --- [FUNC] processEvent
-11:10:27 --- [FUNC] handleRead
-11:10:27 --- Client 5 disconnected
----
-accept twice
-read and parse /meow
-send upload ok and disconnect				// perfect so far, open socket 6
-[back to /upload.html]
-11:10:52 --- [FUNC] processEvent
-11:10:52 --- [FUNC] handleRead
-11:10:52 --- Request Parsed :)
-11:10:52 --- Requested Uri /upload.html translates to file www/upload.html
-11:10:52 --- [DEBUG] Request is not for cgi (.py).
-11:10:52 --- [FUNC] processEvent
-11:10:52 --- [FUNC] handleWrite
-11:10:52 --- sent response to client
-11:10:52 --- [FUNC] processEvent
-11:10:52 --- [FUNC] handleRead
-11:10:52 --- Client 6 disconnected			//this would be perfect, no open sockets
-11:10:57 --- [FUNC] processEvent
-11:10:57 --- [FUNC] handleAccept
-11:10:57 --- Accepted new connection from 127.0.0.1:55950, socket 5
-11:10:57 --- [FUNC] processEvent
-11:10:57 --- [FUNC] handleRead
-11:10:57 --- Request Parsed :)
-11:10:57 --- Requested Uri /upload.html translates to file www/upload.html
-11:10:57 --- [DEBUG] Request is not for cgi (.py).
-11:10:57 --- [FUNC] processEvent
-11:10:57 --- [FUNC] handleAccept
-11:10:57 --- Accepted new connection from 127.0.0.1:55952, socket 6
-11:10:57 --- [FUNC] processEvent
-11:10:57 --- [FUNC] handleWrite
-11:10:57 --- sent response to client
-11:10:57 --- [FUNC] processEvent
-11:10:57 --- [FUNC] handleRead
-11:10:57 --- Client 5 disconnected			//file is requested twice!!! on socket 5 and 6
-[and again]
-11:11:40 --- [FUNC] processEvent
-11:11:40 --- [FUNC] handleRead
-11:11:40 --- Request Parsed :)
-11:11:40 --- Requested Uri /upload.html translates to file www/upload.html
-11:11:40 --- [DEBUG] Request is not for cgi (.py).
-11:11:40 --- [FUNC] processEvent
-11:11:40 --- [FUNC] handleAccept
-11:11:40 --- Accepted new connection from 127.0.0.1:56040, socket 5
-11:11:40 --- [FUNC] processEvent
-11:11:40 --- [FUNC] handleWrite
-11:11:40 --- sent response to client
-11:11:40 --- [FUNC] processEvent
-11:11:40 --- [FUNC] handleRead
-11:11:40 --- Client 6 disconnected
+TEST_02 - upload with multipacket request
+successful, with correct upload format too.
+
+16:57:04 --- Accepted new connection from 127.0.0.1:53967, socket 5
+16:57:05 --- [FUNC] handleRead
+16:57:05 --- RequestParser Constructor
+16:57:05 --- Expecting another handleRead <--- !!!
+16:57:05 --- RequestParser Destructor
+16:57:05 --- [FUNC] handleRead
+16:57:05 --- RequestParser Constructor
+16:57:05 --- new Request: Method=POST, Uri=/meow
+16:57:05 --- Response Constructor
+16:57:05 --- UploadHandler Constructor
+16:57:05 --- Response Destructor
+16:57:05 --- UploadHandler Destructor
+16:57:05 --- RequestParser Destructor
+16:57:05 --- Response sent
+16:57:05 --- [FUNC] handleRead
+16:57:05 --- Client 6 disconnected
+
+TEST_03 - 
