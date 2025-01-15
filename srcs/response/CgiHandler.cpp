@@ -189,7 +189,7 @@ void CgiHandler::writeToCgiStdin(ClientState &client)
 		KqueueManager::registerEvent(client.cgiInputFd, EVFILT_WRITE, EV_DELETE);
 		close(client.cgiInputFd);
 		client.cgiInputFd = -1;
-	}
+	} // missing 0?
 	else if (bytesSent == -1)
 	{
 		print_log(RED, "[ERROR] Error Occurred while writing to cgi stdin.");

@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <set>
 #include <algorithm>
+#include <filesystem>
 
 RequestParser::RequestParser(const std::string &request) : _request(request), _isUpload()
 {
@@ -21,6 +22,14 @@ bool RequestParser::isValidMethod(const std::string &methodStr) const
 	static const std::set<std::string> valid_methods = {
 		"GET", "POST", "PUT", "DELETE"};
 	return valid_methods.find(methodStr) != valid_methods.end();
+}
+
+bool RequestParser::isDirectory(const std::string &path)
+{
+	char realPath[PATH_MAX];
+	if (realpath(path.c_str(), realPath) == NULL)
+		return false;
+	return std::filesystem::is_directory(path);
 }
 
 void RequestParser::parseHeaders(std::istringstream &request_stream, std::unordered_map<std::string, std::string> &h)

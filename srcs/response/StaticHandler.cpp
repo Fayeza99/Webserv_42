@@ -1,5 +1,6 @@
 #include "StaticHandler.hpp"
 #include "utils.hpp"
+#include <dirent.h>
 
 StaticHandler::StaticHandler(ClientState &client) : AResponseHandler(client)
 {
@@ -14,7 +15,10 @@ StaticHandler::~StaticHandler(void)
 
 void StaticHandler::getResponse(void)
 {
-	_client.responseBuffer = responseString();
+	if (RequestParser::isDirectory(_filePath) && autoIndex())
+		_client.responseBuffer = listDir();
+	else
+		_client.responseBuffer = responseString();
 	KqueueManager::registerEvent(_client.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 }
 
@@ -27,8 +31,8 @@ std::string StaticHandler::responseString(void) const
 		return handleRedir();
 	if (!methodAllowed())
 		return ErrorHandler::createResponse(405, getErrorPages());
-	if (_filePath.empty() && autoIndex())
-		return listDir();
+	// if (_filePath.empty() && autoIndex())
+	// 	return listDir();
 	if (realpath(_filePath.c_str(), resolvedPath) == NULL)
 		return ErrorHandler::createResponse(404, getErrorPages());
 	if (realpath(_location.document_root.c_str(), resolvedDocRoot) == NULL)
@@ -61,6 +65,8 @@ void StaticHandler::setFilePath(void)
 	{
 		if (_location.default_files.size() > 0)
 			_filePath = _location.document_root + "/" + _location.default_files[0];
+		else
+			_filePath = _location.document_root + "/";
 	}
 	else
 	{
@@ -71,7 +77,43 @@ void StaticHandler::setFilePath(void)
 
 bool StaticHandler::autoIndex(void) const { return _location.autoIndex; }
 
-std::string StaticHandler::listDir(void) const { return ErrorHandler::createResponse(501, getErrorPages()); } // todo
+std::string StaticHandler::listDirHtml(void) const
+{
+	std::ostringstream response;
+	std::vector<std::string> files;
+	DIR *dir = opendir(_filePath.c_str());
+	std::string uri = getUri();
+
+	if (uri.at(uri.length() - 1) == '/')
+		uri = uri.substr(0, uri.length() - 1);
+	if (dir)
+	{
+		struct dirent *entry;
+		while ((entry = readdir(dir)) != NULL)
+			files.push_back(entry->d_name);
+		closedir(dir);
+	}
+	response << "<!DOCTYPE html>\n<html>\n<head>\n<title>Directory Listing</title>\n</head>\n<body>\n"
+			 << "<h1>Directory Listing for " << getUri() << "</h1>\n<ul>\n";
+	if (getUri() != "/")
+		response << "<li><a href=\"..\">.. (parent directory)</a></li>\n";
+	for (auto f : files)
+		response << "<li><a href=\"" << uri << "/" << f << "\">" << f << "</a></li>\n";
+	response << "</ul>\n</body>\n</html>\n";
+	return response.str();
+}
+
+std::string StaticHandler::listDir(void) const
+{
+	std::ostringstream response;
+	std::string html = listDirHtml();
+	response << getHttpVersion() << " 200 OK\r\n"
+			 << "Content-Type: text/html\r\n"
+			 << "Content-Length: " << html.length() << "\r\n"
+			 << "Connection: close\r\n\r\n"
+			 << html;
+	return response.str();
+}
 
 std::string StaticHandler::handleRedir(void) const
 {

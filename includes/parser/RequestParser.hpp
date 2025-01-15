@@ -45,6 +45,7 @@ public:
 	bool isValidMethod(const std::string &methodStr) const;
 	bool isCgiRequest(void);
 	static std::string trim(const std::string &str);
+	static bool isDirectory(const std::string &path);
 	static void parseHeaders(std::istringstream &request_stream, std::unordered_map<std::string, std::string> &headers);
 
 	RequestParser(const std::string &request);

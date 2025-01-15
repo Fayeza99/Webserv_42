@@ -17,5 +17,6 @@ private:
 	std::string responseString(void) const;
 	std::string handleRedir(void) const;
 	std::string listDir(void) const;
+	std::string listDirHtml(void) const;
 	bool autoIndex(void) const;
 };
