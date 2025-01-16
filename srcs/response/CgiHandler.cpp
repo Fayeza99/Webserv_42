@@ -154,8 +154,8 @@ bool CgiHandler::isFinished(ClientState &client)
 	if (client.cgiPid <= 0)
 		return true;
 	int status;
-	pid_t result = waitpid(client.cgiPid, &status, WNOHANG);
-	print_log(RED, "waitpid result = " + std::to_string(result));
+	pid_t result = waitpid(client.cgiPid, &status, 0);
+	// print_log(RED, "waitpid result = " + std::to_string(result));
 	if (result == 0)
 		return false;
 	else if (result == client.cgiPid)

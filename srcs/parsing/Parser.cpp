@@ -22,8 +22,8 @@ std::string tokenTypeToString(TokenType type)
 		return "SERVER";
 	case TokenType::LISTEN:
 		return "LISTEN";
-	case TokenType::HOSTNAME:
-		return "HOSTNAME";
+	case TokenType::SERVERNAME:
+		return "SERVERNAME";
 	case TokenType::LOCATION:
 		return "LOCATION";
 	case TokenType::ALLOW:
@@ -56,12 +56,12 @@ void Parser::eat(TokenType type)
 	currentToken = lexer.nextToken();
 }
 
-void Parser::parseHostname(ServerConfig &server)
+void Parser::parseServername(ServerConfig &server)
 {
-	eat(TokenType::HOSTNAME);
+	eat(TokenType::SERVERNAME);
 	while (currentToken.type == TokenType::STRING)
 	{
-		server.hostnames.push_back(currentToken.value);
+		server.servernames.push_back(currentToken.value);
 		eat(TokenType::STRING);
 	}
 	eat(TokenType::SEMICOLON);
@@ -250,9 +250,9 @@ ServerConfig Parser::parseServer()
 		{
 			parseListen(server);
 		}
-		else if (currentToken.type == TokenType::HOSTNAME)
+		else if (currentToken.type == TokenType::SERVERNAME)
 		{
-			parseHostname(server);
+			parseServername(server);
 		}
 		else if (currentToken.type == TokenType::LOCATION)
 		{

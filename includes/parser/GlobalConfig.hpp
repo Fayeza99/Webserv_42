@@ -34,7 +34,8 @@ class ServerConfig
 public:
 	int listen_port;
 	bool autoIndex;
-	std::vector<std::string> hostnames;
+	unsigned long client_max_body_size;
+	std::vector<std::string> servernames;
 	std::map<int, std::string> error_pages;
 	std::vector<LocationConfig> locations;
 

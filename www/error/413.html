@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Error 413 - Payload Too Large</title>
+	<style>
+		body {
+			background-color: #fafafa;
+			color: #444;
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			margin: 0;
+			display: flex;
+			flex-direction: column;
+			height: 100vh;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.error-container {
+			text-align: center;
+		}
+
+		.error-code {
+			font-size: 10rem;
+			font-weight: bold;
+			color: #e74c3c;
+			margin: 0;
+		}
+
+		.error-message {
+			font-size: 2rem;
+			margin: 0;
+		}
+
+		.error-description {
+			margin: 20px 0;
+			font-size: 1.2rem;
+			color: #666;
+		}
+
+		a {
+			color: #3498db;
+			text-decoration: none;
+			font-size: 1rem;
+		}
+
+		a:hover {
+			text-decoration: underline;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="error-container">
+		<p class="error-code">413</p>
+		<p class="error-message">Payload Too Large</p>
+		<p class="error-description">the Request's body size exceeds the configured client_max_body_size.</p>
+		<p><a href="/">Return to Home Page</a></p>
+	</div>
+</body>
+
+</html>

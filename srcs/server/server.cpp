@@ -48,7 +48,7 @@ void Server::setNonBlocking(int fd)
  *    - Throws a `std::runtime_error` if `kqueue` fails to initialize.
  *
  * 2. **Checks for Duplicate Server Configurations:**
- *    - Iterates through the list of server configurations (`serverConfigs`) to identify duplicates based on listening ports and hostnames.
+ *    - Iterates through the list of server configurations (`serverConfigs`) to identify duplicates based on listening ports and servernames.
  *    - For each unique configuration, invokes the `createServerSocket` method to establish a corresponding server socket.
  *
  * **Notes:**
@@ -72,9 +72,9 @@ void Server::setup()
 		{
 			if (config1 != config2 && config2->listen_port == config1->listen_port)
 			{
-				for (const std::string &server_name1 : config1->hostnames)
+				for (const std::string &server_name1 : config1->servernames)
 				{
-					for (const std::string &server_name2 : config2->hostnames)
+					for (const std::string &server_name2 : config2->servernames)
 					{
 						if (server_name1 == server_name2)
 						{
@@ -282,6 +282,7 @@ void Server::handleRead(int clientSocket)
 		if (isCL != (*_request).getHeaders().end())
 		{
 			unsigned long CL = stoi(isCL->second);
+			if (serverConfigs)
 			if (CL > 0 && (*_request).getBody().length() < CL)
 			{
 				print_log(RED, "Expecting another handleRead");
