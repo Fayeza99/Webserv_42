@@ -256,6 +256,19 @@ void Server::handleAccept(int serverSocket)
 	// 		  << ", socket " << clientSocket << std::endl;
 }
 
+unsigned long getContentLength(const std::unordered_map<std::string, std::string> &headers) {
+	unsigned long CL = 0;
+	auto isCL = headers.find("Content-Length");
+	if (isCL != headers.end())
+		CL = stoi(isCL->second);
+	return CL;
+}
+
+bool isChunked(const std::unordered_map<std::string, std::string> &headers) {
+	auto isCh = headers.find("Transfer-Encoding");
+	return (isCh != headers.end() && isCh->second == "chunked");
+}
+
 /**
  * @brief Function to process incoming data from clients
  *
@@ -269,8 +282,8 @@ void Server::handleAccept(int serverSocket)
 void Server::handleRead(int clientSocket)
 {
 	print_log(BLACK, "[FUNC] handleRead");
-	char buffer[4096];
-	ssize_t bytesRead = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
+	char buffer[BUFFER_SIZE];
+	ssize_t bytesRead = recv(clientSocket, buffer, BUFFER_SIZE - 1, 0);
 
 	if (bytesRead > 0)
 	{
@@ -278,16 +291,12 @@ void Server::handleRead(int clientSocket)
 		clients[clientSocket].lastActive = time(nullptr);
 		clients[clientSocket].requestBuffer += buffer;
 		_request = new RequestParser(clients[clientSocket].requestBuffer);
-		auto isCL = (*_request).getHeaders().find("Content-Length");
-		if (isCL != (*_request).getHeaders().end())
-		{
-			unsigned long CL = stoi(isCL->second);
-			if (CL > 0 && (*_request).getBody().length() < CL)
-			{
-				print_log(RED, "Expecting another handleRead");
-				delete _request;
-				return;
-			}
+		// if (isChunked((*_request).getHeaders()))
+		// 	print_log(RED, "[ERROR] chunked requests not implemented.");
+		if (getContentLength((*_request).getHeaders()) > (*_request).getBody().length()) {
+			print_log(RED, "Expecting another handleRead" + std::to_string(getContentLength((*_request).getHeaders())));
+			delete _request;
+			return;
 		}
 		clients[clientSocket].request = _request;
 		print_log(WHITE, "new Request: Method=" + _request->getMethod() + ", Uri=" + _request->getUri());
@@ -323,20 +332,24 @@ void Server::handleRead(int clientSocket)
  */
 void Server::handleWrite(int clientSocket)
 {
-	// print_log(BLACK, "[FUNC] handleWrite");
-	// std::cout << "ClientAA: " << clientSocket << std::endl;
+	print_log(BLACK, "[FUNC] handleWrite");
 	std::string &response = clients[clientSocket].responseBuffer;
-	// std::cout << "ResponseAA: \n" << response << std::endl;
+	size_t bytesSent = 0;
 	if (!response.empty())
 	{
-		ssize_t bytesSent = send(clientSocket, response.c_str(), response.size(), 0);
-		print_log(WHITE, "Response sent");
+		if (response.length() > BUFFER_SIZE) {
+			bytesSent = send(clientSocket, response.c_str(), BUFFER_SIZE, 0);
+			clients[clientSocket].responseBuffer = (clients[clientSocket].responseBuffer).substr(bytesSent);
+			clients[clientSocket].lastActive = time(nullptr);
+			print_log(RED, "sending again... buffer now: " + response);
+			return ;
+		}
+		bytesSent = send(clientSocket, response.c_str(), response.size(), 0);
 		clients[clientSocket].requestBuffer.clear();
 		clients[clientSocket].responseBuffer.clear();
+		print_log(WHITE, "Response sent");
 		if (bytesSent > 0)
-		{
 			clients[clientSocket].lastActive = time(nullptr);
-		}
 		else if (bytesSent == 0)
 		{
 			std::cerr << "[ERROR] Client " << clientSocket << " disconnected during write." << std::endl;
@@ -350,9 +363,7 @@ void Server::handleWrite(int clientSocket)
 			return;
 		}
 		if (response.empty())
-		{
 			KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_DELETE);
-		}
 	}
 }
 

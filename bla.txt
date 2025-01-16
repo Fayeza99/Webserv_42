@@ -1,0 +1,7 @@
+if client body < thresh && (< m_b_s || !m_b_s)
+	-> as before with BUFFER_SIZE
+if client body > thresh && (< m_b_s || !m_b_s)
+	-> set temp file to read body to (involves requestparser)
+if client body > m_b_s
+	-> respond code 413
+

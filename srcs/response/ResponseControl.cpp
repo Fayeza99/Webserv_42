@@ -2,14 +2,14 @@
 
 ResponseControl::ResponseControl(ClientState &client) : _location(), _handler(nullptr), _client(client), _request(*client.request)
 {
-	print_log(BLUE, "Response Constructor");
+	// print_log(BLUE, "Response Constructor");
 	_location.getLocation(_client.serverConfig, _request.getUri());
 	setHandler();
 }
 
 ResponseControl::~ResponseControl(void)
 {
-	print_log(BLUE, "Response Destructor");
+	// print_log(BLUE, "Response Destructor");
 	delete _handler;
 }
 

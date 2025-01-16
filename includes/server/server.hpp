@@ -22,13 +22,15 @@
 #include <string>
 #include <iostream>
 
+#define PATH_MAX 1024
+#define BUFFER_SIZE 2048
+
 class Server
 {
 private:
 	std::vector<ServerConfig> serverConfigs;
 	std::map<int, ServerConfig> serverSockets;
 	RequestParser *_request;
-	// Response *_response;
 	ResponseControl *_response;
 
 	void setNonBlocking(int fd);

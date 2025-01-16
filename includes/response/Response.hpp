@@ -17,8 +17,6 @@
 // # include "ErrorHandler.hpp"
 // # include "utils.hpp"
 
-// # define PATH_MAX 1024
-// # define BUFFER_SIZE 1024
 
 // class Response
 // {

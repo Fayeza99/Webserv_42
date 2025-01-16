@@ -8,13 +8,13 @@
 
 RequestParser::RequestParser(const std::string &request) : _request(request), _isUpload()
 {
-	print_log(BLUE, "RequestParser Constructor");
+	// print_log(BLUE, "RequestParser Constructor");
 	parseRequest(_request);
 }
 
 RequestParser::~RequestParser()
 {
-	print_log(BLUE, "RequestParser Destructor");
+	// print_log(BLUE, "RequestParser Destructor");
 }
 
 bool RequestParser::isValidMethod(const std::string &methodStr) const
@@ -106,20 +106,9 @@ void RequestParser::parseRequest(const std::string &request)
 		{
 			content_length = std::stoi(it->second);
 			if (content_length < 0)
-			{
 				throw std::runtime_error("Invalid Content-Length value: " + it->second);
-			}
-			// body.resize(content_length);
 			while (std::getline(request_stream, line))
-			{
-				body += line + '\n'; // Concatenate each line with newline
-			}
-			// if (static_cast<int>(request_stream.gcount()) < content_length)
-			// {
-			// 	throw std::runtime_error("Incomplete request body: Expected " +
-			// 							 std::to_string(content_length) + " bytes, but got " +
-			// 							 std::to_string(request_stream.gcount()));
-			// }
+				body += line + '\n';
 		}
 		catch (const std::exception &e)
 		{
@@ -137,86 +126,9 @@ void RequestParser::parseRequest(const std::string &request)
 			}
 		}
 	}
-	// std::cout << "content_length:" << content_length << ", body:" << body.length() << std::endl;
-	// if (headers["Content-Type"].find("multipart/form-data") != std::string::npos && body.length() >= content_length)
 	if (headers["Content-Type"].find("multipart/form-data") != std::string::npos)
 		_isUpload = true;
 }
-
-// void RequestParser::set_boundary(void)
-// {
-// 	_boundary = headers["Content-Type"];
-// 	_boundary = _boundary.substr(_boundary.find("boundary=") + 9);
-// 	_boundary = trim(_boundary);
-// }
-
-// -----------------------------------------------------------------FileUpload
-
-// FileUpload::FileUpload(std::string body) : body_stream(body) {}
-
-// FileUpload::FileUpload(const FileUpload &other)
-// {
-// 	body_stream = std::istringstream(other.body_stream.str());
-// 	content = other.content;
-// 	name = other.name;
-// 	filename = other.filename;
-// }
-
-// void FileUpload::set_name(void)
-// {
-// 	name = "";
-// 	size_t pos = headers["Content-Disposition"].find(" name=\"");
-// 	if (pos != std::string::npos)
-// 	{
-// 		name = headers["Content-Disposition"].substr(pos + 7);
-// 		name = name.substr(0, name.find("\""));
-// 	}
-// }
-
-// void FileUpload::set_filename(void)
-// {
-// 	filename = "";
-// 	size_t pos = headers["Content-Disposition"].find(" filename=\"");
-// 	if (pos != std::string::npos)
-// 	{
-// 		filename = headers["Content-Disposition"].substr(pos + 11);
-// 		filename = filename.substr(0, filename.find("\""));
-// 	}
-// }
-
-// void RequestParser::parseUpload(void)
-// {
-// 	std::string line;
-// 	std::string b(body);
-// 	std::vector<std::string> parts;
-// 	set_boundary();
-// 	while (!b.empty())
-// 	{
-// 		size_t next = b.find(_boundary);
-// 		parts.push_back(b.substr(0, next));
-// 		if (next != std::string::npos)
-// 			b = b.substr(next + _boundary.length());
-// 		else
-// 			b = "";
-// 	}
-// 	for (std::string p : parts)
-// 	{
-// 		p = trim(p);
-// 		if (p == "--")
-// 			continue;
-// 		FileUpload upload(p);
-// 		parseHeaders(upload.body_stream, upload.headers);
-// 		upload.set_name();
-// 		upload.set_filename();
-// 		while (std::getline(upload.body_stream, line))
-// 			upload.content += line + '\n';
-// 		size_t pos = upload.content.find_last_of("--");
-// 		if (pos != std::string::npos)
-// 			upload.content = upload.content.substr(0, pos - 3);
-// 		_upload.push_back(upload);
-// 	}
-// }
-// FORMAT: -- , boundary , headers , \r\n\r\n , content , -- , boundary , [...] , boundary , --
 
 std::string const &RequestParser::getMethod() const { return method; }
 
@@ -228,8 +140,6 @@ std::string const &RequestParser::getUri() const { return uri; }
 
 std::unordered_map<std::string, std::string> const &RequestParser::getHeaders() const { return headers; }
 
-// std::vector<FileUpload> const &RequestParser::getUpload() const { return _upload; }
-
 std::string const &RequestParser::getBody() const { return body; }
 
 std::string RequestParser::trim(const std::string &str)
@@ -237,9 +147,7 @@ std::string RequestParser::trim(const std::string &str)
 	const std::string whitespace = " \t\r\n";
 	size_t start = str.find_first_not_of(whitespace);
 	if (start == std::string::npos)
-	{
 		return "";
-	}
 	size_t end = str.find_last_not_of(whitespace);
 	return str.substr(start, end - start + 1);
 }

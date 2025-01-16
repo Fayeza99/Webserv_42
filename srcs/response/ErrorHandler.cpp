@@ -5,6 +5,7 @@ const std::map<int, std::string> ErrorHandler::defaultErrorMessages = {
 	{403, "Forbidden"},
 	{404, "Not Found"},
 	{405, "Method Not Allowed"},
+	{413, "Payload Too Large"},
 	{500, "Internal Server Error"},
 	{501, "Not Implemented"}
 };
@@ -14,6 +15,7 @@ const std::map<int, std::string> ErrorHandler::defaultErrorFilePaths = {
 	{403, "www/error/403.html"},
 	{404, "www/error/404.html"},
 	{405, "www/error/405.html"},
+	{405, "www/error/413.html"},
 	{500, "www/error/500.html"},
 	{501, "www/error/501.html"}
 };

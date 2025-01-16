@@ -4,13 +4,13 @@
 
 StaticHandler::StaticHandler(ClientState &client) : AResponseHandler(client)
 {
-	print_log(BLUE, "StaticHandler Constructor");
+	// print_log(BLUE, "StaticHandler Constructor");
 	setFilePath();
 }
 
 StaticHandler::~StaticHandler(void)
 {
-	print_log(BLUE, "StaticHandler Destructor");
+	// print_log(BLUE, "StaticHandler Destructor");
 }
 
 void StaticHandler::getResponse(void)

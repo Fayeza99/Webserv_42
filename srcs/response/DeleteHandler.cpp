@@ -2,13 +2,13 @@
 
 DeleteHandler::DeleteHandler(ClientState &client) : AResponseHandler(client)
 {
-	print_log(BLUE, "DeleteHandler Constructor");
+	// print_log(BLUE, "DeleteHandler Constructor");
 	setFilePath();
 }
 
 DeleteHandler::~DeleteHandler(void)
 {
-	print_log(BLUE, "DeleteHandler Destructor");
+	// print_log(BLUE, "DeleteHandler Destructor");
 }
 
 void DeleteHandler::getResponse(void)
