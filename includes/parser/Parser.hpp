@@ -8,6 +8,7 @@
 #include <set>
 #include "Lexer.hpp"
 #include "GlobalConfig.hpp"
+
 std::string tokenTypeToString(TokenType type);
 
 class Parser
@@ -28,6 +29,5 @@ public:
 	Parser(const std::string &input);
 	GlobalConfig parse();
 	ServerConfig parseServer();
-	// std::vector<int> initializeSockets(const GlobalConfig &config);
 
 };

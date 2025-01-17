@@ -39,7 +39,6 @@ void LocationConfig::getLocation(const ServerConfig &serverConfig, const std::st
 			dir_uri += '/';
 		if (match_uri.compare(0, dir_uri.length(), dir_uri) == 0 || loc.uri == match_uri)
 		{
-			std::cerr << RED << "--" << match_uri << "--" << dir_uri << "--\n" << RESET;
 			if (dir_uri.length() > bestMatchLength)
 			{
 				*this = loc;

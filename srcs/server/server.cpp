@@ -21,7 +21,7 @@ void Server::configure(const std::string &configFilePath)
 {
 	Parser parser(readConfigFile(configFilePath));
 	GlobalConfig globalConfig = parser.parse();
-	printGlobalConfig(globalConfig, 4);
+	// printGlobalConfig(globalConfig, 4);
 	serverConfigs = globalConfig.servers;
 }
 
@@ -190,7 +190,6 @@ void Server::createServerSocket(ServerConfig &config)
 	// Adding the newly create server socket to the map
 	serverSockets[serverSocket] = config;
 	print_log(WHITE, "Server is listening on port " + std::to_string(config.listen_port));
-	// std::cout << "Server is listening on port " << config.listen_port << std::endl;
 }
 
 /**
@@ -249,11 +248,8 @@ void Server::handleAccept(int serverSocket)
 	clients[clientSocket].clientIPAddress = clientip;
 	clients[clientSocket].clientPort = ntohs(clientAddr.sin_port);
 
-	print_log(WHITE, "Accepted new connection from " + clients[clientSocket].clientIPAddress + ":" + std::to_string(clients[clientSocket].clientPort) + ", socket " + std::to_string(clientSocket));
-	// std::cout << "Accepted new connection from "
-	// 		  << clients[clientSocket].clientIPAddress << ":"
-	// 		  << clients[clientSocket].clientPort
-	// 		  << ", socket " << clientSocket << std::endl;
+	print_log(WHITE, "Accepted new connection from " + clients[clientSocket].clientIPAddress \
+			+ ":" + std::to_string(clients[clientSocket].clientPort) + ", socket " + std::to_string(clientSocket));
 }
 
 unsigned long getContentLength(const std::unordered_map<std::string, std::string> &headers) {
@@ -281,7 +277,7 @@ bool isChunked(const std::unordered_map<std::string, std::string> &headers) {
  */
 void Server::handleRead(int clientSocket)
 {
-	print_log(BLACK, "[FUNC] handleRead");
+	// print_log(BLACK, "[FUNC] handleRead");
 	char buffer[BUFFER_SIZE];
 	ssize_t bytesRead = recv(clientSocket, buffer, BUFFER_SIZE - 1, 0);
 
@@ -304,13 +300,13 @@ void Server::handleRead(int clientSocket)
 			}
 			if (CL > 0 && (*_request).getBody().length() < CL)
 			{
-				print_log(RED, "Expecting another handleRead");
+				// print_log(RED, "Expecting another handleRead");
 				delete _request;
 				return;
 			}
 		}
 		clients[clientSocket].request = _request;
-		print_log(WHITE, "new Request: Method=" + _request->getMethod() + ", Uri=" + _request->getUri());
+		// print_log(WHITE, "new Request: Method=" + _request->getMethod() + ", Uri=" + _request->getUri());
 		_response = new ResponseControl(clients[clientSocket]);
 		_response->getResponse();
 		if (!_response->isCgiRequest())
@@ -322,7 +318,7 @@ void Server::handleRead(int clientSocket)
 	}
 	else if (bytesRead == 0)
 	{
-		print_log(BLACK, "Client " + std::to_string(clientSocket) + " disconnected");
+		print_log(WHITE, "Client " + std::to_string(clientSocket) + " disconnected");
 		removeClient(clientSocket);
 	}
 	else
@@ -343,7 +339,7 @@ void Server::handleRead(int clientSocket)
  */
 void Server::handleWrite(int clientSocket)
 {
-	print_log(BLACK, "[FUNC] handleWrite");
+	// print_log(BLACK, "[FUNC] handleWrite");
 	std::string &response = clients[clientSocket].responseBuffer;
 	size_t bytesSent = 0;
 	if (!response.empty())
@@ -352,13 +348,12 @@ void Server::handleWrite(int clientSocket)
 			bytesSent = send(clientSocket, response.c_str(), BUFFER_SIZE, 0);
 			clients[clientSocket].responseBuffer = (clients[clientSocket].responseBuffer).substr(bytesSent);
 			clients[clientSocket].lastActive = time(nullptr);
-			// print_log(RED, "socket " + std::to_string(clientSocket) + " sending again... buffer now " + std::to_string(response.length()));
 			return ;
 		}
 		bytesSent = send(clientSocket, response.c_str(), response.size(), 0);
 		clients[clientSocket].requestBuffer.clear();
 		clients[clientSocket].responseBuffer.clear();
-		print_log(WHITE, "Response sent");
+		// print_log(WHITE, "Response sent");
 		if (bytesSent > 0)
 			clients[clientSocket].lastActive = time(nullptr);
 		else if (bytesSent == 0)
@@ -475,10 +470,8 @@ void Server::checkTimeouts()
 		{
 			int clientSocket = it->first;
 			print_log(WHITE, "Client " + std::to_string(clientSocket) + " timed out");
-			// removeClient(clientSocket);
 			KqueueManager::deregisterEvent(clientSocket);
 			close(clientSocket);
-			// clients.erase(clientSocket);
 			it = clients.erase(it);
 		}
 		else

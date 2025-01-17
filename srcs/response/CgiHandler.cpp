@@ -22,6 +22,13 @@ CgiHandler::~CgiHandler(void)
 
 void CgiHandler::getResponse(void)
 {
+	char realPath[PATH_MAX];
+	if (realpath(_filePath.c_str(), realPath) == NULL)
+	{
+		_client.responseBuffer = ErrorHandler::createResponse(500, getErrorPages());
+		KqueueManager::registerEvent(_client.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+		return;
+	}
 	try
 	{
 		executeCgi();
@@ -144,7 +151,7 @@ void CgiHandler::childProcess(void)
 	}
 
 	char *argv[] = {(char *)"/usr/bin/python3", (char *)scriptFileName.c_str(), NULL};
-	print_log(BLACK, "[DEBUG] executing script with python...");
+	// print_log(BLACK, "[DEBUG] executing cgi");
 	execve("/usr/bin/python3", argv, env.data());
 	exit(1);
 }
@@ -155,8 +162,7 @@ bool CgiHandler::isFinished(ClientState &client)
 		return true;
 	int status;
 	pid_t result = waitpid(client.cgiPid, &status, 0);
-	// print_log(RED, "waitpid result = " + std::to_string(result));
-	if (result == 0)
+	if (WIFEXITED(status) && status != 0)
 		return false;
 	else if (result == client.cgiPid)
 		return true;
@@ -189,7 +195,7 @@ void CgiHandler::writeToCgiStdin(ClientState &client)
 		KqueueManager::registerEvent(client.cgiInputFd, EVFILT_WRITE, EV_DELETE);
 		close(client.cgiInputFd);
 		client.cgiInputFd = -1;
-	} // missing 0?
+	}
 	else if (bytesSent == -1)
 	{
 		print_log(RED, "[ERROR] Error Occurred while writing to cgi stdin.");
@@ -203,7 +209,7 @@ bool CgiHandler::readFromCgiStdout(ClientState &client)
 {
 	// print_log(BLACK, "[FUNC] readFromCgiStdout");
 	if (client.cgiOutputFd < 0)
-		return false; //!!!
+		return false;
 
 	char buffer[4096];
 	ssize_t bytesRead = read(client.cgiOutputFd, buffer, sizeof(buffer));
@@ -224,10 +230,10 @@ bool CgiHandler::readFromCgiStdout(ClientState &client)
 		close(client.cgiOutputFd);
 		client.cgiOutputFd = -1;
 
-		if (!isFinished(client))
-			print_log(RED, "[ERROR] Something went wrong in CGI, not finished.");
-		else
-			print_log(BLACK, "[DEBUG] script finished. returning response.");
+		if (!isFinished(client)) {
+			print_log(RED, "[ERROR] Something went wrong in CGI.");
+			client.responseBuffer = ErrorHandler::createResponse(500);
+		}
 		return true;
 	}
 	else

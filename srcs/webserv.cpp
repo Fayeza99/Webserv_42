@@ -24,19 +24,3 @@ int main (int argc, char **argv) {
 		}
 	}
 }
-
-// response testing ------------------------------------------------------------------
-
-// int	main(void) {
-// 	// setup with config
-// 	Parser parser(readConfigFile("config/default.conf"));
-// 	ServerConfig serverconf = parser.parseServer();//this means only one serverconfig is used from the file
-// 	ClientState clientstate(serverconf);
-
-// 	// test_1(clientstate);
-// 	// test_2(clientstate);
-// 	// test_3(clientstate);
-// 	// test_4(clientstate);
-// 	test_5(clientstate);
-// 	return 0;
-// }

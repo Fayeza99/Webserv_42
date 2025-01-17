@@ -33,8 +33,6 @@ std::string StaticHandler::responseString(void) const
 		return ErrorHandler::createResponse(405, getErrorPages());
 	if (getMethod() == "POST")
 		return ErrorHandler::createResponse(501, getErrorPages());
-	// if (_filePath.empty() && autoIndex())
-	// 	return listDir();
 	if (realpath(_filePath.c_str(), resolvedPath) == NULL)
 		return ErrorHandler::createResponse(404, getErrorPages());
 	if (realpath(_location.document_root.c_str(), resolvedDocRoot) == NULL)
@@ -91,14 +89,17 @@ std::string StaticHandler::listDirHtml(void) const
 	if (dir)
 	{
 		struct dirent *entry;
-		while ((entry = readdir(dir)) != NULL)
-			files.push_back(entry->d_name);
+		while ((entry = readdir(dir)) != NULL) {
+			std::string name(entry->d_name);
+			if (name != "." && name != "..")
+				files.push_back(name);
+		}
 		closedir(dir);
 	}
 	response << "<!DOCTYPE html>\n<html>\n<head>\n<title>Directory Listing</title>\n</head>\n<body>\n"
-			 << "<h1>Directory Listing for " << getUri() << "</h1>\n<ul>\n";
+			 << "<h1>" << getUri() << "</h1>\n<ul>\n";
 	if (getUri() != "/")
-		response << "<li><a href=\"..\">.. (parent directory)</a></li>\n";
+		response << "<li><a href=\"..\">..</a></li>\n";
 	for (auto f : files)
 		response << "<li><a href=\"" << uri << "/" << f << "\">" << f << "</a></li>\n";
 	response << "</ul>\n</body>\n</html>\n";
