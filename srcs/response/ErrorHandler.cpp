@@ -15,7 +15,7 @@ const std::map<int, std::string> ErrorHandler::defaultErrorFilePaths = {
 	{403, "www/error/403.html"},
 	{404, "www/error/404.html"},
 	{405, "www/error/405.html"},
-	{405, "www/error/413.html"},
+	{413, "www/error/413.html"},
 	{500, "www/error/500.html"},
 	{501, "www/error/501.html"}
 };

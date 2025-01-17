@@ -19,6 +19,7 @@ private:
 	void eat(TokenType type);
 	void parseServername(ServerConfig &server);
 	void parseListen(ServerConfig &server);
+	void parseMaxbodysize(ServerConfig &server);
 	void parseErrorPage(ServerConfig &server);
 	void parseAutoIndex(ServerConfig &server);
 	LocationConfig parseLocation();

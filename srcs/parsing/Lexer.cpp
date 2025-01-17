@@ -80,11 +80,11 @@ Token Lexer::nextToken()
 			if (word == "error_page")
 				return Token(TokenType::ERROR_PAGE);
 			if (word == "autoindex")
-			{
 				return Token(TokenType::AUTOINDEX);
-			}
 			if (word == "location")
 				return Token(TokenType::LOCATION);
+			if (word == "client_max_body_size")
+				return Token(TokenType::MAXBODYSIZE);
 			return Token(TokenType::STRING, word);
 		}
 		else if (isdigit(c))

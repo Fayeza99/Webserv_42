@@ -32,6 +32,8 @@ std::string tokenTypeToString(TokenType type)
 		return "ERROR_PAGE";
 	case TokenType::AUTOINDEX:
 		return "AUTOINDEX";
+	case TokenType::MAXBODYSIZE:
+		return "MAXBODYSIZE";
 	default:
 		return "UNKNOWN";
 	}
@@ -63,6 +65,21 @@ void Parser::parseServername(ServerConfig &server)
 	{
 		server.servernames.push_back(currentToken.value);
 		eat(TokenType::STRING);
+	}
+	eat(TokenType::SEMICOLON);
+}
+
+void Parser::parseMaxbodysize(ServerConfig &server)
+{
+	eat(TokenType::MAXBODYSIZE);
+	if (currentToken.type == TokenType::NUMBER)
+	{
+		server.client_max_body_size = std::stol(currentToken.value);
+		eat(TokenType::NUMBER);
+	}
+	else
+	{
+		throw std::runtime_error("Expected number after 'client_max_body_size'");
 	}
 	eat(TokenType::SEMICOLON);
 }
@@ -247,24 +264,17 @@ ServerConfig Parser::parseServer()
 	while (currentToken.type != TokenType::CLOSE_BRACE)
 	{
 		if (currentToken.type == TokenType::LISTEN)
-		{
 			parseListen(server);
-		}
+		else if (currentToken.type == TokenType::MAXBODYSIZE)
+			parseMaxbodysize(server);
 		else if (currentToken.type == TokenType::SERVERNAME)
-		{
 			parseServername(server);
-		}
 		else if (currentToken.type == TokenType::LOCATION)
-		{
 			server.locations.push_back(parseLocation());
-		}
 		else if (currentToken.type == TokenType::ERROR_PAGE)
-		{
 			parseErrorPage(server);
-		}
-		else if (currentToken.type == TokenType::AUTOINDEX) {
+		else if (currentToken.type == TokenType::AUTOINDEX)
 			parseAutoIndex(server);
-		}
 		else
 		{
 			std::cerr << "[ERROR] Unexpected token within server block: " << static_cast<int>(currentToken.type) << std::endl;

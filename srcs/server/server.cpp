@@ -295,6 +295,13 @@ void Server::handleRead(int clientSocket)
 		if (isCL != (*_request).getHeaders().end())
 		{
 			unsigned long CL = stoi(isCL->second);
+			if (clients[clientSocket].serverConfig.client_max_body_size < CL) {
+				print_log(RED, "Request body too long (413)");
+				clients[clientSocket].responseBuffer = ErrorHandler::createResponse(413);
+				KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_DELETE);
+				KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+				return ;
+			}
 			if (CL > 0 && (*_request).getBody().length() < CL)
 			{
 				print_log(RED, "Expecting another handleRead");
@@ -345,7 +352,7 @@ void Server::handleWrite(int clientSocket)
 			bytesSent = send(clientSocket, response.c_str(), BUFFER_SIZE, 0);
 			clients[clientSocket].responseBuffer = (clients[clientSocket].responseBuffer).substr(bytesSent);
 			clients[clientSocket].lastActive = time(nullptr);
-			print_log(RED, "sending again... buffer now: " + response);
+			// print_log(RED, "socket " + std::to_string(clientSocket) + " sending again... buffer now " + std::to_string(response.length()));
 			return ;
 		}
 		bytesSent = send(clientSocket, response.c_str(), response.size(), 0);

@@ -24,6 +24,7 @@ enum class TokenType
 	URI,
 	SERVERNAME,
 	LOCATION,
+	MAXBODYSIZE,
 	ALLOW
 };
 
