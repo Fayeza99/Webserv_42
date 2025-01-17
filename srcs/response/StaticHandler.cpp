@@ -31,6 +31,8 @@ std::string StaticHandler::responseString(void) const
 		return handleRedir();
 	if (!methodAllowed())
 		return ErrorHandler::createResponse(405, getErrorPages());
+	if (getMethod() == "POST")
+		return ErrorHandler::createResponse(501, getErrorPages());
 	// if (_filePath.empty() && autoIndex())
 	// 	return listDir();
 	if (realpath(_filePath.c_str(), resolvedPath) == NULL)
