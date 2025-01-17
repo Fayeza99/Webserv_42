@@ -1,4 +1,5 @@
 #include "GlobalConfig.hpp"
+#include "utils.hpp"
 
 ServerConfig::ServerConfig() : listen_port(80), autoIndex(false) {}
 
@@ -32,12 +33,16 @@ void LocationConfig::getLocation(const ServerConfig &serverConfig, const std::st
 	// choose the location from the config file, that fits the request best
 	for (const LocationConfig &loc : serverConfig.locations)
 	{
-		if (match_uri.compare(0, loc.uri.length(), loc.uri) == 0)
+		std::string dir_uri = loc.uri;
+		if (dir_uri.at(dir_uri.length()-1) != '/')
+			dir_uri += '/';
+		if (match_uri.compare(0, dir_uri.length(), dir_uri) == 0 || loc.uri == match_uri)
 		{
-			if (loc.uri.size() > bestMatchLength)
+			std::cerr << RED << "--" << match_uri << "--" << dir_uri << "--\n" << RESET;
+			if (dir_uri.length() > bestMatchLength)
 			{
 				*this = loc;
-				bestMatchLength = loc.uri.length();
+				bestMatchLength = dir_uri.length();
 			}
 		}
 	}
