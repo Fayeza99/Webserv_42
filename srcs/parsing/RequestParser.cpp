@@ -151,10 +151,3 @@ std::string RequestParser::trim(const std::string &str)
 	size_t end = str.find_last_not_of(whitespace);
 	return str.substr(start, end - start + 1);
 }
-
-bool RequestParser::isCgiRequest(void)
-{
-	if (uri.find(".py") != std::string::npos)
-		return true;
-	return false;
-}

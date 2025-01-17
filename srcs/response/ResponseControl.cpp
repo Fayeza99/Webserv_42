@@ -13,6 +13,15 @@ ResponseControl::~ResponseControl(void)
 	delete _handler;
 }
 
+bool ResponseControl::isCgiRequest(void)
+{
+	if (_location.cgi_ext.empty())
+		return false;
+	if (_request.getUri().find(_location.cgi_ext) != std::string::npos)
+		return true;
+	return false;
+}
+
 AResponseHandler *ResponseControl::getHandler(void) { return _handler; }
 
 void ResponseControl::setHandler(void)
@@ -23,7 +32,7 @@ void ResponseControl::setHandler(void)
 		_handler = new DeleteHandler(_client);
 	else if (_request._isUpload)
 		_handler = new UploadHandler(_client);
-	else if (_request.isCgiRequest())
+	else if (isCgiRequest())
 		_handler = new CgiHandler(_client);
 	else
 		_handler = new StaticHandler(_client);

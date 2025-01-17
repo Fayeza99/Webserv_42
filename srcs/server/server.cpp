@@ -313,7 +313,7 @@ void Server::handleRead(int clientSocket)
 		print_log(WHITE, "new Request: Method=" + _request->getMethod() + ", Uri=" + _request->getUri());
 		_response = new ResponseControl(clients[clientSocket]);
 		_response->getResponse();
-		if (!(*_request).isCgiRequest())
+		if (!_response->isCgiRequest())
 		{
 			delete _response;
 			delete _request;

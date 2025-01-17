@@ -62,13 +62,13 @@ void printLocationConfig(const LocationConfig &loc, int indent = 0)
 		std::cout << "- " << method << std::endl;
 	}
 
-	printIndent(indent + 2);
-	std::cout << "CGI Paths:" << std::endl;
-	for (const auto &cgi : loc.cgi_paths)
-	{
-		printIndent(indent + 4);
-		std::cout << cgi.first << ": " << cgi.second << std::endl;
-	}
+	// printIndent(indent + 2);
+	// std::cout << "CGI Paths:" << std::endl;
+	// for (const auto &cgi : loc.cgi_paths)
+	// {
+	// 	printIndent(indent + 4);
+	// 	std::cout << cgi.first << ": " << cgi.second << std::endl;
+	// }
 }
 
 void printServerConfig(const ServerConfig &server, int indent = 0)

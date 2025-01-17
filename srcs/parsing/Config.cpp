@@ -11,7 +11,7 @@ LocationConfig::LocationConfig(const LocationConfig &c)
 }
 
 LocationConfig::LocationConfig()
-	: uri(""), document_root(""), autoIndex(false), redirect(false), redirect_uri("") {}
+	: uri(""), document_root(""), autoIndex(false), redirect(false), redirect_uri(""), cgi_ext("") {}
 
 LocationConfig &LocationConfig::operator=(const LocationConfig &c)
 {
@@ -19,7 +19,8 @@ LocationConfig &LocationConfig::operator=(const LocationConfig &c)
 	this->document_root = c.document_root;
 	this->default_files = c.default_files;
 	this->supported_methods = c.supported_methods;
-	this->cgi_paths = c.cgi_paths;
+	// this->cgi_paths = c.cgi_paths;
+	this->cgi_ext = c.cgi_ext;
 	this->autoIndex = c.autoIndex;
 	this->redirect = c.redirect;
 	this->redirect_uri = c.redirect_uri;

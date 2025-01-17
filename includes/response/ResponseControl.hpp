@@ -28,6 +28,7 @@ public:
 	~ResponseControl(void);
 
 	void setHandler(void);
+	bool isCgiRequest(void);
 	AResponseHandler *getHandler(void);
 	void getResponse(void);
 

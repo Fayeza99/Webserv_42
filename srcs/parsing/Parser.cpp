@@ -189,8 +189,7 @@ LocationConfig Parser::parseLocation()
 				}
 				location.document_root = path;
 				eat(TokenType::SEMICOLON);
-			}
-			else if (directive == "return") {
+			} else if (directive == "return") {
 				std::string redirectURI;
 				if (currentToken.type == TokenType::STRING) {
 					redirectURI += currentToken.value;
@@ -202,6 +201,12 @@ LocationConfig Parser::parseLocation()
 				}
 				location.redirect = true;
 				location.redirect_uri = redirectURI;
+				eat(TokenType::SEMICOLON);
+			} else if (directive == "cgi_extension") {
+				if (currentToken.type == TokenType::EXTENSION) {
+					location.cgi_ext = currentToken.value;
+					eat(TokenType::EXTENSION);
+				}
 				eat(TokenType::SEMICOLON);
 			} else if (currentToken.type == TokenType::AUTOINDEX) {
 				eat(TokenType::AUTOINDEX);

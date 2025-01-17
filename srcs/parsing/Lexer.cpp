@@ -45,6 +45,20 @@ Token Lexer::nextToken()
 		return Token(TokenType::CLOSE_BRACE);
 	case ';':
 		return Token(TokenType::SEMICOLON);
+	case '.':
+	{
+		std::string ext;
+		ext += c;
+		while (pos < input.size())
+		{
+			char current = input[pos];
+			if (isalnum(current))
+				ext += nextChar();
+			else
+				break;
+		}
+		return Token(TokenType::EXTENSION, ext);
+	}
 	case '/':
 	{
 		std::string uri;

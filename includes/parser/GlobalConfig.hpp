@@ -19,9 +19,10 @@ public:
 	bool autoIndex;
 	bool redirect;
 	std::string redirect_uri;
+	std::string cgi_ext;
 	std::vector<std::string> default_files;
 	std::set<std::string> supported_methods;
-	std::map<std::string, std::string> cgi_paths;
+	// std::map<std::string, std::string> cgi_paths;
 
 	LocationConfig();
 	LocationConfig(const LocationConfig &c);
