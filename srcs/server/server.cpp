@@ -287,6 +287,8 @@ void Server::handleRead(int clientSocket)
 		clients[clientSocket].lastActive = time(nullptr);
 		clients[clientSocket].requestBuffer += buffer;
 		_request = new RequestParser(clients[clientSocket].requestBuffer);
+
+		// print_log(RED, std::to_string(isKeepAlive));
 		auto isCL = (*_request).getHeaders().find("Content-Length");
 		if (isCL != (*_request).getHeaders().end())
 		{
@@ -306,10 +308,10 @@ void Server::handleRead(int clientSocket)
 			}
 		}
 		clients[clientSocket].request = _request;
-		// print_log(WHITE, "new Request: Method=" + _request->getMethod() + ", Uri=" + _request->getUri());
+		print_log(WHITE, "new Request: Method=" + _request->getMethod() + ", Uri=" + _request->getUri());
 		_response = new ResponseControl(clients[clientSocket]);
 		_response->getResponse();
-		if (!_response->isCgiRequest())
+		if (!(*_response).isCgiRequest())
 		{
 			delete _response;
 			delete _request;
