@@ -83,11 +83,11 @@ void printServerConfig(const ServerConfig &server, int indent = 0)
 	std::cout << "AutoIndex: " << server.autoIndex << std::endl;
 
 	printIndent(indent + 2);
-	std::cout << "Hostnames:" << std::endl;
-	for (const std::string &hostname : server.hostnames)
+	std::cout << "Servernames:" << std::endl;
+	for (const std::string &name : server.servernames)
 	{
 		printIndent(indent + 4);
-		std::cout << "- " << hostname << std::endl;
+		std::cout << "- " << name << std::endl;
 	}
 
 	printIndent(indent + 2);

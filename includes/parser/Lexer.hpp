@@ -22,7 +22,7 @@ enum class TokenType
 	ERROR_PAGE,
 	AUTOINDEX,
 	URI,
-	HOSTNAME,
+	SERVERNAME,
 	LOCATION,
 	ALLOW
 };

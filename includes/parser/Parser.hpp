@@ -17,7 +17,7 @@ private:
 	Token currentToken;
 
 	void eat(TokenType type);
-	void parseHostname(ServerConfig &server);
+	void parseServername(ServerConfig &server);
 	void parseListen(ServerConfig &server);
 	void parseErrorPage(ServerConfig &server);
 	void parseAutoIndex(ServerConfig &server);
