@@ -1,6 +1,7 @@
 #include "Parser.hpp"
+#include "utils.hpp"
 #include <sys/socket.h> // For socket, bind, listen
-#include <arpa/inet.h>  // For htons
+#include <arpa/inet.h>	// For htons
 
 std::string tokenTypeToString(TokenType type)
 {
@@ -121,11 +122,13 @@ void Parser::parseErrorPage(ServerConfig &server)
 				  << tokenTypeToString(currentToken.type) << std::endl;
 		throw std::runtime_error("Syntax error in 'error_page' directive.");
 	}
-	if (currentToken.type == TokenType::STRING) {
+	if (currentToken.type == TokenType::STRING)
+	{
 		errorPageUri += currentToken.value;
 		eat(TokenType::STRING);
 	}
-	if (currentToken.type == TokenType::URI) {
+	if (currentToken.type == TokenType::URI)
+	{
 		errorPageUri += currentToken.value;
 		eat(TokenType::URI);
 	}
@@ -135,18 +138,23 @@ void Parser::parseErrorPage(ServerConfig &server)
 	eat(TokenType::SEMICOLON);
 }
 
-void Parser::parseAutoIndex(ServerConfig &server) {
+void Parser::parseAutoIndex(ServerConfig &server)
+{
 	eat(TokenType::AUTOINDEX);
-	if ((currentToken.type != TokenType::STRING) || (currentToken.value != "on" && currentToken.value != "off")) {
+	if ((currentToken.type != TokenType::STRING) || (currentToken.value != "on" && currentToken.value != "off"))
+	{
 		std::cerr << "[ERROR] Parsing error at position " << lexer.getPosition()
 				  << ": expected on/off (String) after 'autoindex', but found "
 				  << tokenTypeToString(currentToken.type) << std::endl;
 		throw std::runtime_error("Syntax error in 'autoindex' directive.");
 	}
 
-	if (currentToken.value == "on") {
+	if (currentToken.value == "on")
+	{
 		server.autoIndex = true;
-	} else {
+	}
+	else
+	{
 		server.autoIndex = false;
 	}
 
@@ -160,10 +168,13 @@ LocationConfig Parser::parseLocation()
 	location.autoIndex = false;
 	eat(TokenType::LOCATION);
 
-	if (currentToken.type == TokenType::URI) {
+	if (currentToken.type == TokenType::URI)
+	{
 		location.uri = currentToken.value;
 		eat(TokenType::URI);
-	} else {
+	}
+	else
+	{
 		throw std::runtime_error("Expected URI starting with '/' in location block.");
 	}
 
@@ -179,46 +190,61 @@ LocationConfig Parser::parseLocation()
 			std::string path;
 			if (directive == "root")
 			{
-				if (currentToken.type == TokenType::STRING) {
+				if (currentToken.type == TokenType::STRING)
+				{
 					path += currentToken.value;
 					eat(TokenType::STRING);
 				}
-				if (currentToken.type == TokenType::URI) {
+				if (currentToken.type == TokenType::URI)
+				{
 					path += currentToken.value;
 					eat(TokenType::URI);
 				}
 				location.document_root = path;
 				eat(TokenType::SEMICOLON);
-			} else if (directive == "return") {
+			}
+			else if (directive == "return")
+			{
 				std::string redirectURI;
-				if (currentToken.type == TokenType::STRING) {
+				if (currentToken.type == TokenType::STRING)
+				{
 					redirectURI += currentToken.value;
 					eat(TokenType::STRING);
 				}
-				if (currentToken.type == TokenType::URI) {
-					path += currentToken.value;
+				if (currentToken.type == TokenType::URI)
+				{
+					redirectURI += currentToken.value;
 					eat(TokenType::URI);
 				}
 				location.redirect = true;
 				location.redirect_uri = redirectURI;
 				eat(TokenType::SEMICOLON);
-			} else if (directive == "cgi_extension") {
-				if (currentToken.type == TokenType::EXTENSION) {
+			}
+			else if (directive == "cgi_extension")
+			{
+				if (currentToken.type == TokenType::EXTENSION)
+				{
 					location.cgi_ext = currentToken.value;
 					eat(TokenType::EXTENSION);
 				}
 				eat(TokenType::SEMICOLON);
-			} else if (currentToken.type == TokenType::AUTOINDEX) {
+			}
+			else if (currentToken.type == TokenType::AUTOINDEX)
+			{
 				eat(TokenType::AUTOINDEX);
-				if ((currentToken.type != TokenType::STRING) || (currentToken.value != "on" && currentToken.value != "off")) {
+				if ((currentToken.type != TokenType::STRING) || (currentToken.value != "on" && currentToken.value != "off"))
+				{
 					std::cerr << "[ERROR] Parsing error at position " << lexer.getPosition()
 							  << ": expected on/off (String) after 'autoindex', but found "
 							  << tokenTypeToString(currentToken.type) << std::endl;
 					throw std::runtime_error("Syntax error in 'location (autoindex)' directive.");
 				}
-				if (currentToken.value == "on") {
+				if (currentToken.value == "on")
+				{
 					location.autoIndex = true;
-				} else {
+				}
+				else
+				{
 					location.autoIndex = false;
 				}
 				eat(TokenType::STRING);

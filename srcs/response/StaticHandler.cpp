@@ -15,6 +15,7 @@ StaticHandler::~StaticHandler(void)
 
 void StaticHandler::getResponse(void)
 {
+	print_log(BLUE, "getting response, filepath is -" + _filePath + "-");
 	if (RequestParser::isDirectory(_filePath) && autoIndex())
 		_client.responseBuffer = listDir();
 	else
@@ -66,12 +67,12 @@ void StaticHandler::setFilePath(void)
 		if (_location.default_files.size() > 0)
 			_filePath = _location.document_root + "/" + _location.default_files[0];
 		else
-			_filePath = _location.document_root + "/";
+			_filePath = _location.document_root;
 	}
 	else
 	{
-		std::string uri = getUri().substr(_location.uri.length());
-		_filePath = _location.document_root + "/" + uri;
+		std::string uri = getUri().substr(_location.uri.length() - 1);
+		_filePath = _location.document_root + uri;
 	}
 }
 
@@ -84,22 +85,21 @@ std::string StaticHandler::listDirHtml(void) const
 	DIR *dir = opendir(_filePath.c_str());
 	std::string uri = getUri();
 
-	if (uri.at(uri.length() - 1) == '/')
-		uri = uri.substr(0, uri.length() - 1);
+	if (uri.back() == '/')
+		uri.pop_back();
 	if (dir)
 	{
 		struct dirent *entry;
-		while ((entry = readdir(dir)) != NULL) {
+		while ((entry = readdir(dir)) != NULL)
+		{
 			std::string name(entry->d_name);
-			if (name != "." && name != "..")
+			if (name != ".")
 				files.push_back(name);
 		}
 		closedir(dir);
 	}
 	response << "<!DOCTYPE html>\n<html>\n<head>\n<title>Directory Listing</title>\n</head>\n<body>\n"
 			 << "<h1>" << getUri() << "</h1>\n<ul>\n";
-	if (getUri() != "/")
-		response << "<li><a href=\"..\">..</a></li>\n";
 	for (auto f : files)
 		response << "<li><a href=\"" << uri << "/" << f << "\">" << f << "</a></li>\n";
 	response << "</ul>\n</body>\n</html>\n";

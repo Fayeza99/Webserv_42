@@ -21,7 +21,7 @@ void Server::configure(const std::string &configFilePath)
 {
 	Parser parser(readConfigFile(configFilePath));
 	GlobalConfig globalConfig = parser.parse();
-	// printGlobalConfig(globalConfig, 4);
+	printGlobalConfig(globalConfig, 4);
 	serverConfigs = globalConfig.servers;
 }
 
@@ -248,11 +248,11 @@ void Server::handleAccept(int serverSocket)
 	clients[clientSocket].clientIPAddress = clientip;
 	clients[clientSocket].clientPort = ntohs(clientAddr.sin_port);
 
-	print_log(WHITE, "Accepted new connection from " + clients[clientSocket].clientIPAddress \
-			+ ":" + std::to_string(clients[clientSocket].clientPort) + ", socket " + std::to_string(clientSocket));
+	print_log(WHITE, "Accepted new connection from " + clients[clientSocket].clientIPAddress + ":" + std::to_string(clients[clientSocket].clientPort) + ", socket " + std::to_string(clientSocket));
 }
 
-unsigned long getContentLength(const std::unordered_map<std::string, std::string> &headers) {
+unsigned long getContentLength(const std::unordered_map<std::string, std::string> &headers)
+{
 	unsigned long CL = 0;
 	auto isCL = headers.find("Content-Length");
 	if (isCL != headers.end())
@@ -260,7 +260,8 @@ unsigned long getContentLength(const std::unordered_map<std::string, std::string
 	return CL;
 }
 
-bool isChunked(const std::unordered_map<std::string, std::string> &headers) {
+bool isChunked(const std::unordered_map<std::string, std::string> &headers)
+{
 	auto isCh = headers.find("Transfer-Encoding");
 	return (isCh != headers.end() && isCh->second == "chunked");
 }
@@ -288,17 +289,17 @@ void Server::handleRead(int clientSocket)
 		clients[clientSocket].requestBuffer += buffer;
 		_request = new RequestParser(clients[clientSocket].requestBuffer);
 
-		// print_log(RED, std::to_string(isKeepAlive));
 		auto isCL = (*_request).getHeaders().find("Content-Length");
 		if (isCL != (*_request).getHeaders().end())
 		{
 			unsigned long CL = stoi(isCL->second);
-			if (clients[clientSocket].serverConfig.client_max_body_size < CL) {
+			if (clients[clientSocket].serverConfig.client_max_body_size < CL)
+			{
 				print_log(RED, "Request body too long (413)");
 				clients[clientSocket].responseBuffer = ErrorHandler::createResponse(413);
 				KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_DELETE);
 				KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
-				return ;
+				return;
 			}
 			if (CL > 0 && (*_request).getBody().length() < CL)
 			{
@@ -346,11 +347,12 @@ void Server::handleWrite(int clientSocket)
 	size_t bytesSent = 0;
 	if (!response.empty())
 	{
-		if (response.length() > BUFFER_SIZE) {
+		if (response.length() > BUFFER_SIZE)
+		{
 			bytesSent = send(clientSocket, response.c_str(), BUFFER_SIZE, 0);
 			clients[clientSocket].responseBuffer = (clients[clientSocket].responseBuffer).substr(bytesSent);
 			clients[clientSocket].lastActive = time(nullptr);
-			return ;
+			return;
 		}
 		bytesSent = send(clientSocket, response.c_str(), response.size(), 0);
 		clients[clientSocket].requestBuffer.clear();
