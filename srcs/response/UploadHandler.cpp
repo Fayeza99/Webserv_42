@@ -17,7 +17,11 @@ UploadHandler::~UploadHandler(void)
 void UploadHandler::getResponse(void)
 {
 	std::ostringstream response;
-	if (writeFiles())
+	if (!methodAllowed())
+		_client.responseBuffer = ErrorHandler::createResponse(405, getErrorPages());
+	else if (!RequestParser::isDirectory(_filePath))
+		_client.responseBuffer = ErrorHandler::createResponse(404, getErrorPages());
+	else if (writeFiles())
 	{
 		response << getHttpVersion()
 				 << " 201 Created\r\n"

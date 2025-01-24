@@ -15,7 +15,7 @@ StaticHandler::~StaticHandler(void)
 
 void StaticHandler::getResponse(void)
 {
-	print_log(BLUE, "getting response, filepath is -" + _filePath + "-");
+	// print_log(BLUE, "getting response, filepath is -" + _filePath + "-");
 	if (RequestParser::isDirectory(_filePath) && autoIndex())
 		_client.responseBuffer = listDir();
 	else
