@@ -156,7 +156,7 @@ void Server::createServerSocket(ServerConfig &config)
 	}
 
 	// Setting the server options
-	int opt = 1;
+	int opt = 2048;
 	if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
 	{
 		close(serverSocket);
@@ -281,7 +281,7 @@ void Server::handleRead(int clientSocket)
 	// print_log(BLACK, "[FUNC] handleRead");
 	char buffer[BUFFER_SIZE];
 	ssize_t bytesRead = recv(clientSocket, buffer, BUFFER_SIZE - 1, 0);
-
+	print_log(YELLOW, std::to_string(bytesRead));
 	if (bytesRead > 0)
 	{
 		buffer[bytesRead] = '\0';
@@ -303,8 +303,10 @@ void Server::handleRead(int clientSocket)
 			}
 			if (CL > 0 && (*_request).getBody().length() < CL)
 			{
-				// print_log(RED, "Expecting another handleRead");
+				print_log(RED, "Expecting another handleRead (" + std::to_string(CL) + ")");
 				delete _request;
+				// KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_DELETE);
+				KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
 				return;
 			}
 		}
@@ -392,7 +394,7 @@ void Server::handleWrite(int clientSocket)
  */
 void Server::processEvent(struct kevent &event)
 {
-	// print_log(BLACK, "[FUNC] processEvent");
+	print_log(BLACK, "[FUNC] processEvent");
 	int fd = static_cast<int>(event.ident);
 
 	if (event.flags & EV_ERROR)
