@@ -115,11 +115,14 @@ void CgiHandler::executeCgi(void)
 		throw std::runtime_error("Failed to fork CGI process");
 
 	if (cgiPid == 0) {
-		KqueueManager::registerTimer(cgiPid, 5);
 		childProcess();
 	}
 	else
+	{
+		KqueueManager::registerTimer(cgiPid, 5);
 		parentProcess();
+
+	}
 }
 
 void CgiHandler::parentProcess(void)
