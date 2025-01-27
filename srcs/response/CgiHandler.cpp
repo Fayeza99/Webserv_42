@@ -267,3 +267,45 @@ bool CgiHandler::readFromCgiStdout(ClientState &client)
 		return false;
 	}
 }
+
+// HOW TO CGI TIMEOUT WITH KQ: (!!!)
+
+// bool CgiHandler::handleCGIWithTimeout(KqueueManager &kqManager, pid_t cgiPid)
+// {
+// 	// Register the process as a monitored event in kqueue
+// 	struct kevent change;
+// 	EV_SET(&change, cgiPid, EVFILT_PROC, EV_ADD | EV_ENABLE, NOTE_EXIT, 0, nullptr);
+
+// 	if (kevent(kqManager.kq, &change, 1, nullptr, 0, nullptr) == -1)
+// 	{
+// 		std::cerr << "[ERROR] Failed to register CGI process in kqueue: " << strerror(errno) << std::endl;
+// 		return false;
+// 	}
+
+// 	// Wait for either the process to exit or the timeout to occur
+// 	struct kevent event;
+// 	struct timespec timeout = { CGI_TIMEOUT_SECONDS, 0 }; // Timeout duration (e.g., 10 seconds)
+
+// 	int nev = kevent(kqManager.kq, nullptr, 0, &event, 1, &timeout);
+// 	if (nev == -1)
+// 	{
+// 		std::cerr << "[ERROR] kevent failed: " << strerror(errno) << std::endl;
+// 		return false; // Treat as no timeout, handle as normal
+// 	}
+// 	else if (nev == 0)
+// 	{
+// 		// Timeout occurred
+// 		print_log(RED, "[ERROR] CGI script timed out.");
+// 		kill(cgiPid, SIGKILL); // Terminate the stuck process
+// 		waitpid(cgiPid, nullptr, 0); // Clean up process resources
+// 		return true; // Indicate timeout occurred
+// 	}
+// 	else if (event.filter == EVFILT_PROC && event.fflags & NOTE_EXIT)
+// 	{
+// 		// Process exited normally
+// 		waitpid(cgiPid, nullptr, 0); // Clean up process resources
+// 		return false; // No timeout occurred
+// 	}
+
+// 	return false; // Default case, no timeout
+// }

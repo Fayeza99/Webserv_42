@@ -25,6 +25,7 @@
 
 #define PATH_MAX 1024
 #define BUFFER_SIZE 2048
+#define CGI_TIMEOUT 5000 // Timeout in milliseconds
 
 class Server
 {

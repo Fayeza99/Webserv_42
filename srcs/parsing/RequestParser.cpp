@@ -83,13 +83,11 @@ void RequestParser::parseRequest(const std::string &request)
 			throw std::runtime_error("Malformed request line");
 		}
 		if (!isValidMethod(method))
-		{
 			throw std::runtime_error("Unknown HTTP method: " + method);
-		}
 		if (httpVersion != "HTTP/1.1" && httpVersion != "HTTP/1.0")
-		{
 			throw std::runtime_error("Unsupported HTTP version: " + httpVersion);
-		}
+		if (uri.length() > 1 && uri.back() == '/')
+			uri.pop_back();
 	}
 	else
 	{

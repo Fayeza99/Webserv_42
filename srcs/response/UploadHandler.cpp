@@ -1,5 +1,6 @@
 #include "UploadHandler.hpp"
 #include "RequestParser.hpp"
+#include "utils.hpp"
 
 UploadHandler::UploadHandler(ClientState &client) : AResponseHandler(client), _boundary("")
 {
@@ -17,12 +18,17 @@ UploadHandler::~UploadHandler(void)
 void UploadHandler::getResponse(void)
 {
 	std::ostringstream response;
-	if (writeFiles())
+	if (!methodAllowed())
+		_client.responseBuffer = ErrorHandler::createResponse(405, getErrorPages());
+	else if (!RequestParser::isDirectory(_filePath))
+		_client.responseBuffer = ErrorHandler::createResponse(404, getErrorPages());
+	else if (writeFiles())
 	{
-		response << getHttpVersion()
-				 << " 201 Created\r\n"
-				 << "Content-Length: 0\r\n"
-				 << "Connection: close\r\n\r\n";
+		response << getHttpVersion() << " 201 Created\r\n";
+		if (getErrorPages().find(201) != getErrorPages().end())
+			response << ErrorHandler::createResponse(201, getErrorPages());
+		else
+			response << "Content-Length: 0\r\nConnection: close\r\n\r\n";
 		_client.responseBuffer = response.str();
 	}
 	else

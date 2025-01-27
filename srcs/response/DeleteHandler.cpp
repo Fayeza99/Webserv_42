@@ -25,6 +25,8 @@ int DeleteHandler::deleteFile(void) const
 {
 	if (_filePath.empty())
 		return 404;
+	if (!methodAllowed())
+		return 405;
 	char realPath[PATH_MAX];
 	if (realpath(_filePath.c_str(), realPath) == NULL)
 		return 404;
