@@ -20,6 +20,7 @@
 #include <ctime>
 #include <map>
 #include <string>
+#include <signal.h>
 #include <iostream>
 
 #define PATH_MAX 1024

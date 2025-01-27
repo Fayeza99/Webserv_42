@@ -7,7 +7,8 @@ const std::map<int, std::string> ErrorHandler::defaultErrorMessages = {
 	{405, "Method Not Allowed"},
 	{413, "Payload Too Large"},
 	{500, "Internal Server Error"},
-	{501, "Not Implemented"}
+	{501, "Not Implemented"},
+	{504, "Gateway Timeout"}
 };
 
 const std::map<int, std::string> ErrorHandler::defaultErrorFilePaths = {
@@ -17,7 +18,8 @@ const std::map<int, std::string> ErrorHandler::defaultErrorFilePaths = {
 	{405, "www/error/405.html"},
 	{413, "www/error/413.html"},
 	{500, "www/error/500.html"},
-	{501, "www/error/501.html"}
+	{501, "www/error/501.html"},
+	{504, "www/error/504.html"}
 };
 
 std::string ErrorHandler::createResponse(int errorCode) {

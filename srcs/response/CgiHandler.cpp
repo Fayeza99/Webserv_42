@@ -114,8 +114,10 @@ void CgiHandler::executeCgi(void)
 	if (cgiPid == -1)
 		throw std::runtime_error("Failed to fork CGI process");
 
-	if (cgiPid == 0)
+	if (cgiPid == 0) {
+		KqueueManager::registerTimer(cgiPid, 5);
 		childProcess();
+	}
 	else
 		parentProcess();
 }
@@ -156,22 +158,22 @@ void CgiHandler::childProcess(void)
 	exit(1);
 }
 
-bool CgiHandler::isFinished(ClientState &client)
-{
-	if (client.cgiPid <= 0)
-		return true;
-	int status;
-	pid_t result = waitpid(client.cgiPid, &status, 0);
-	if (WIFEXITED(status) && status != 0)
-		return false;
-	else if (result == client.cgiPid)
-		return true;
-	else
-	{
-		print_log(RED, "[ERROR] Something went wrong with waitpid.");
-		return true;
-	}
-}
+// bool CgiHandler::isFinished(ClientState &client)
+// {
+// 	if (client.cgiPid <= 0)
+// 		return true;
+// 	int status;
+// 	pid_t result = waitpid(client.cgiPid, &status, 0);
+// 	if (WIFEXITED(status) && status != 0)
+// 		return false;
+// 	else if (result == client.cgiPid)
+// 		return true;
+// 	else
+// 	{
+// 		print_log(RED, "[ERROR] Something went wrong with waitpid.");
+// 		return true;
+// 	}
+// }
 
 void CgiHandler::writeToCgiStdin(ClientState &client)
 {
@@ -225,15 +227,32 @@ bool CgiHandler::readFromCgiStdout(ClientState &client)
 	}
 	else if (bytesRead == 0)
 	{
+		// int code = 0;
 		KqueueManager::registerEvent(client.cgiOutputFd, EVFILT_READ, EV_DELETE);
-		KqueueManager::registerEvent(client.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 		close(client.cgiOutputFd);
 		client.cgiOutputFd = -1;
-
-		if (!isFinished(client)) {
-			print_log(RED, "[ERROR] Something went wrong in CGI.");
-			client.responseBuffer = ErrorHandler::createResponse(500);
+		
+		if (client.cgiPid > 0)
+		{
+			int status;
+			waitpid(client.cgiPid, &status, 0);
+			if (WIFEXITED(status) && status != 0)
+				client.responseBuffer = ErrorHandler::createResponse(500, client.serverConfig.error_pages);
+			else if (WIFSIGNALED(status))
+				client.responseBuffer = ErrorHandler::createResponse(504, client.serverConfig.error_pages);
+			
+			KqueueManager::removeTimeout(client.cgiPid);
 		}
+		
+	
+		KqueueManager::registerEvent(client.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+
+
+		// code = isFinished(client)
+		// if (!isFinished(client)) {
+		// 	print_log(RED, "[ERROR] Something went wrong in CGI.");
+		// 	client.responseBuffer = ErrorHandler::createResponse(500);
+		// }
 		return true;
 	}
 	else

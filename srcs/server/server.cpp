@@ -405,6 +405,15 @@ void Server::processEvent(struct kevent &event)
 		}
 		return;
 	}
+	else if (event.filter == EVFILT_TIMER)
+	{
+		// // Handle timeout
+		int timePid = static_cast<int>(event.ident); // Retrieve the associated fd
+		// std::cerr << "[TIMEOUT] Timeout occurred for fd: " << timePid << std::endl;
+		print_log(YELLOW, "timeout");
+		kill(timePid, SIGKILL);
+		return;
+	}
 	else if (serverSockets.count(fd))
 	{
 		if (event.filter == EVFILT_READ)
@@ -419,6 +428,7 @@ void Server::processEvent(struct kevent &event)
 	}
 	else
 	{
+
 		ClientState *client = findClientByPipeFd(fd);
 		if (!client)
 		{
