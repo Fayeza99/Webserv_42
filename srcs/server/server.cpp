@@ -242,13 +242,13 @@ void Server::handleAccept(int serverSocket)
 	KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
 
 	const ServerConfig &config = serverSockets[serverSocket];
-	clients.emplace(clientSocket, ClientState(config, clientSocket)); //!!!
+	clients.emplace(clientSocket, ClientState(config, clientSocket));
 
 	std::string clientip(inet_ntoa(clientAddr.sin_addr));
 	clients[clientSocket].clientIPAddress = clientip;
 	clients[clientSocket].clientPort = ntohs(clientAddr.sin_port);
 
-	print_log(WHITE, "Accepted new connection from " + clients[clientSocket].clientIPAddress + ":" + std::to_string(clients[clientSocket].clientPort) + ", socket " + std::to_string(clientSocket));
+	// print_log(WHITE, "Accepted new connection from " + clients[clientSocket].clientIPAddress + ":" + std::to_string(clients[clientSocket].clientPort) + ", socket " + std::to_string(clientSocket));
 }
 
 unsigned long getContentLength(const std::unordered_map<std::string, std::string> &headers)
@@ -281,53 +281,59 @@ void Server::handleRead(int clientSocket)
 	// print_log(BLACK, "[FUNC] handleRead");
 	char buffer[BUFFER_SIZE];
 	ssize_t bytesRead = recv(clientSocket, buffer, BUFFER_SIZE - 1, 0);
-	print_log(YELLOW, std::to_string(bytesRead));
 	if (bytesRead > 0)
 	{
 		buffer[bytesRead] = '\0';
 		clients[clientSocket].lastActive = time(nullptr);
+		if (clients[clientSocket].draining) {
+			if (bytesRead < BUFFER_SIZE - 1) {
+				clients[clientSocket].draining = false;
+				print_log(WHITE, _request->getMethod() + " " + _request->getUri() + " 413");
+				KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_DELETE);
+				KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+				delete _request;
+			} else {
+				KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
+			}
+			return ;
+		}
 		clients[clientSocket].requestBuffer += buffer;
 		_request = new RequestParser(clients[clientSocket].requestBuffer);
 
 		auto isCL = (*_request).getHeaders().find("Content-Length");
-		if (isCL != (*_request).getHeaders().end())
-		{
+		if (isCL != (*_request).getHeaders().end()) {
 			unsigned long CL = stoi(isCL->second);
-			if (clients[clientSocket].serverConfig.client_max_body_size < CL)
-			{
-				print_log(RED, "Request body too long (413)");
+			if (clients[clientSocket].serverConfig.client_max_body_size < CL) {
+				// print_log(RED, "Request body too long (413)");
 				clients[clientSocket].responseBuffer = ErrorHandler::createResponse(413);
-				KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_DELETE);
-				KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+				clients[clientSocket].statuscode = 413;
+				clients[clientSocket].draining = true;
 				return;
 			}
-			if (CL > 0 && (*_request).getBody().length() < CL)
-			{
-				print_log(RED, "Expecting another handleRead (" + std::to_string(CL) + ")");
+			if (CL > 0 && (*_request).getBody().length() < CL) {
+				// print_log(RED, "Expecting another handleRead (" + std::to_string(CL) + ")");
 				delete _request;
-				// KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_DELETE);
 				KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
 				return;
 			}
 		}
 		clients[clientSocket].request = _request;
-		print_log(WHITE, "new Request: Method=" + _request->getMethod() + ", Uri=" + _request->getUri());
 		_response = new ResponseControl(clients[clientSocket]);
 		_response->getResponse();
-		if (!(*_response).isCgiRequest())
-		{
+
+		std::stringstream log;
+		log << _request->getMethod() << " " << _request->getUri() << " " << _response->getClient().statuscode;
+		print_log(WHITE, log.str());
+
+		if (!(*_response).isCgiRequest()) {
 			delete _response;
 			delete _request;
 			clients[clientSocket].request = nullptr;
 		}
-	}
-	else if (bytesRead == 0)
-	{
-		print_log(WHITE, "Client " + std::to_string(clientSocket) + " disconnected");
+	} else if (bytesRead == 0) {
+		// print_log(WHITE, "Client " + std::to_string(clientSocket) + " disconnected");
 		removeClient(clientSocket);
-	}
-	else
-	{
+	} else {
 		print_log(RED, "Read error on client " + std::to_string(clientSocket) + ", removing client.");
 		removeClient(clientSocket);
 	}
@@ -362,14 +368,11 @@ void Server::handleWrite(int clientSocket)
 		// print_log(WHITE, "Response sent");
 		if (bytesSent > 0)
 			clients[clientSocket].lastActive = time(nullptr);
-		else if (bytesSent == 0)
-		{
+		else if (bytesSent == 0) {
 			std::cerr << "[ERROR] Client " << clientSocket << " disconnected during write." << std::endl;
 			removeClient(clientSocket);
 			return;
-		}
-		else
-		{
+		} else {
 			std::cerr << "[ERROR] Write error on client " << clientSocket << ", removing client." << std::endl;
 			removeClient(clientSocket);
 			return;
@@ -394,7 +397,7 @@ void Server::handleWrite(int clientSocket)
  */
 void Server::processEvent(struct kevent &event)
 {
-	print_log(BLACK, "[FUNC] processEvent");
+	// print_log(BLACK, "[FUNC] processEvent");
 	int fd = static_cast<int>(event.ident);
 
 	if (event.flags & EV_ERROR)
@@ -411,10 +414,8 @@ void Server::processEvent(struct kevent &event)
 	}
 	else if (event.filter == EVFILT_TIMER)
 	{
-		// // Handle timeout
-		int timePid = static_cast<int>(event.ident); // Retrieve the associated fd
-		// std::cerr << "[TIMEOUT] Timeout occurred for fd: " << timePid << std::endl;
-		print_log(YELLOW, "timeout");
+		int timePid = static_cast<int>(event.ident);
+		print_log(RED, "Cgi timed out.");
 		kill(timePid, SIGKILL);
 		return;
 	}

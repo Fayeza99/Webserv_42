@@ -17,14 +17,16 @@ struct ClientState
 
 	std::string clientIPAddress;
 	int clientPort;
+	int statuscode;
+	bool draining;
 
 	bool isCgiRequest;
 	int cgiInputFd;
 	int cgiOutputFd;
 	int cgiPid;
 
-	ClientState() : fd(-1), request(nullptr), lastActive(std::time(NULL)), serverConfig(), isCgiRequest(false), cgiInputFd(-1), cgiOutputFd(-1), cgiPid(-1) {}
+	ClientState() : fd(-1), request(nullptr), lastActive(std::time(NULL)), serverConfig(), statuscode(200), draining(false), isCgiRequest(false), cgiInputFd(-1), cgiOutputFd(-1), cgiPid(-1) {}
 
 	ClientState(const ServerConfig& config, int _fd)
-		: fd(_fd), request(nullptr), lastActive(std::time(NULL)), serverConfig(config), isCgiRequest(false), cgiInputFd(-1), cgiOutputFd(-1), cgiPid(-1) {}
+		: fd(_fd), request(nullptr), lastActive(std::time(NULL)), serverConfig(config), statuscode(200), draining(false), isCgiRequest(false), cgiInputFd(-1), cgiOutputFd(-1), cgiPid(-1) {}
 };

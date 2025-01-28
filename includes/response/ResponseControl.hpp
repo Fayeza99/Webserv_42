@@ -31,6 +31,7 @@ public:
 	bool isCgiRequest(void);
 	AResponseHandler *getHandler(void);
 	void getResponse(void);
+	ClientState &getClient(void);
 
 private:
 	LocationConfig _location;

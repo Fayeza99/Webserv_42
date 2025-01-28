@@ -13,11 +13,11 @@ DeleteHandler::~DeleteHandler(void)
 
 void DeleteHandler::getResponse(void)
 {
-	int code = deleteFile();
-	if (code == 204)
+	_client.statuscode = deleteFile();
+	if (_client.statuscode == 204)
 		_client.responseBuffer = getHttpVersion() + " 204 No Content\r\n\r\n";
 	else
-		_client.responseBuffer = ErrorHandler::createResponse(code, getErrorPages());
+		_client.responseBuffer = ErrorHandler::createResponse(_client.statuscode, getErrorPages());
 	KqueueManager::registerEvent(_client.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 }
 

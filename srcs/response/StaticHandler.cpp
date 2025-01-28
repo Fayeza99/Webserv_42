@@ -30,23 +30,32 @@ std::string StaticHandler::responseString(void) const
 	char resolvedDocRoot[PATH_MAX];
 	if (_location.redirect && getUri() != _location.redirect_uri)
 		return handleRedir();
-	if (!methodAllowed())
+	if (!methodAllowed()) {
+		_client.statuscode = 405;
 		return ErrorHandler::createResponse(405, getErrorPages());
-	if (getMethod() == "POST")
+	} else if (getMethod() == "POST") {
+		_client.statuscode = 501;
 		return ErrorHandler::createResponse(501, getErrorPages());
-	if (realpath(_filePath.c_str(), resolvedPath) == NULL)
+	} else if (realpath(_filePath.c_str(), resolvedPath) == NULL) {
+		_client.statuscode = 404;
 		return ErrorHandler::createResponse(404, getErrorPages());
-	if (realpath(_location.document_root.c_str(), resolvedDocRoot) == NULL)
+	} else if (realpath(_location.document_root.c_str(), resolvedDocRoot) == NULL) {
+		_client.statuscode = 500;
 		return ErrorHandler::createResponse(500, getErrorPages());
+	}
 
 	std::string resolvedFilePath(resolvedPath);
 	std::string resolvedDocRootStr(resolvedDocRoot);
-	if (resolvedFilePath.find(resolvedDocRootStr) != 0)
+	if (resolvedFilePath.find(resolvedDocRootStr) != 0) {
+		_client.statuscode = 403;
 		return ErrorHandler::createResponse(403, getErrorPages());
+	}
 
 	std::ifstream file(resolvedFilePath.c_str(), std::ios::in | std::ios::binary);
-	if (!file.is_open())
+	if (!file.is_open()) {
+		_client.statuscode = 404;
 		return ErrorHandler::createResponse(404, getErrorPages());
+	}
 
 	std::ostringstream bodyStream;
 	bodyStream << file.rdbuf();
@@ -57,6 +66,7 @@ std::string StaticHandler::responseString(void) const
 			 << "Content-Length: " << body.size() << "\r\n"
 			 << "Connection: close\r\n\r\n"
 			 << body;
+	_client.statuscode = 200;
 	return response.str();
 }
 
@@ -115,6 +125,7 @@ std::string StaticHandler::listDir(void) const
 			 << "Content-Length: " << html.length() << "\r\n"
 			 << "Connection: close\r\n\r\n"
 			 << html;
+	_client.statuscode = 200;
 	return response.str();
 }
 
@@ -125,5 +136,6 @@ std::string StaticHandler::handleRedir(void) const
 			 << " 302 Found\r\n"
 			 << "Location: " << _location.redirect_uri << "\r\n"
 			 << "Connection: close\r\n\r\n";
+	_client.statuscode = 302;
 	return response.str();
 }

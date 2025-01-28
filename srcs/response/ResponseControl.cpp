@@ -42,3 +42,5 @@ void ResponseControl::getResponse(void)
 {
 	_handler->getResponse();
 }
+
+ClientState &ResponseControl::getClient(void) {return _client;}

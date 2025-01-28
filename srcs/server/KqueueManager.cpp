@@ -32,13 +32,13 @@ void KqueueManager::registerTimer(int pid, int sec) {
 
 void KqueueManager::removeTimeout(int pid)
 {
-    struct kevent change;
-    EV_SET(&change, pid, EVFILT_TIMER, EV_DELETE, 0, 0, nullptr);
+	struct kevent change;
 
-    if (kevent(kq, &change, 1, nullptr, 0, nullptr) == -1)
-    {
-        std::cerr << "[ERROR] Failed to remove timer for pid " << pid << ": " << strerror(errno) << std::endl;
-    }
+	EV_SET(&change, pid, EVFILT_TIMER, EV_DELETE, 0, 0, nullptr);
+	if (kevent(kq, &change, 1, nullptr, 0, nullptr) == -1)
+	{
+		std::cerr << "[ERROR] Failed to remove timer for pid " << pid << ": " << strerror(errno) << std::endl;
+	}
 }
 
 

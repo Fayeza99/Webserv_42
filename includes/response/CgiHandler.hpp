@@ -30,5 +30,4 @@ private:
 	void executeCgi(void);
 	void parentProcess(void);
 	void childProcess(void);
-	static bool isFinished(ClientState &client);
 };

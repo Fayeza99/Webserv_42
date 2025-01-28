@@ -18,23 +18,24 @@ UploadHandler::~UploadHandler(void)
 void UploadHandler::getResponse(void)
 {
 	std::ostringstream response;
-	if (!methodAllowed())
+	if (!methodAllowed()) {
 		_client.responseBuffer = ErrorHandler::createResponse(405, getErrorPages());
-	else if (!RequestParser::isDirectory(_filePath))
+		_client.statuscode = 405;
+	} else if (!RequestParser::isDirectory(_filePath)) {
 		_client.responseBuffer = ErrorHandler::createResponse(404, getErrorPages());
-	else if (writeFiles())
-	{
+		_client.statuscode = 404;
+	} else if (writeFiles()) {
 		response << getHttpVersion() << " 201 Created\r\n";
 		if (getErrorPages().find(201) != getErrorPages().end())
 			response << ErrorHandler::createResponse(201, getErrorPages());
 		else
 			response << "Content-Length: 0\r\nConnection: close\r\n\r\n";
 		_client.responseBuffer = response.str();
-	}
-	else
-	{
+		_client.statuscode = 201;
+	} else {
 		print_log(RED, "[ERROR] handleUpload");
 		_client.responseBuffer = ErrorHandler::createResponse(500, getErrorPages());
+		_client.statuscode = 500;
 	}
 	KqueueManager::registerEvent(_client.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 }

@@ -23,9 +23,11 @@ CgiHandler::~CgiHandler(void)
 void CgiHandler::getResponse(void)
 {
 	char realPath[PATH_MAX];
+	_client.statuscode = 200;
 	if (realpath(_filePath.c_str(), realPath) == NULL)
 	{
 		_client.responseBuffer = ErrorHandler::createResponse(500, getErrorPages());
+		_client.statuscode = 500;
 		KqueueManager::registerEvent(_client.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 		return;
 	}
@@ -37,6 +39,7 @@ void CgiHandler::getResponse(void)
 	{
 		print_log(RED, "[ERROR] executeCgi");
 		_client.responseBuffer = ErrorHandler::createResponse(500, getErrorPages());
+		_client.statuscode = 500;
 		KqueueManager::registerEvent(_client.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 	}
 }
@@ -221,49 +224,36 @@ bool CgiHandler::readFromCgiStdout(ClientState &client)
 	buffer[bytesRead] = '\0';
 	std::string response = buffer;
 
-	if (bytesRead > 0)
-	{
+	if (bytesRead > 0) {
 		if (client.responseBuffer.empty())
 			client.responseBuffer = "HTTP/1.1 200 OK\r\n";
 		client.responseBuffer += response;
 		return false;
-	}
-	else if (bytesRead == 0)
-	{
-		// int code = 0;
+	} else if (bytesRead == 0) {
 		KqueueManager::registerEvent(client.cgiOutputFd, EVFILT_READ, EV_DELETE);
 		close(client.cgiOutputFd);
 		client.cgiOutputFd = -1;
-		
 		if (client.cgiPid > 0)
 		{
 			int status;
 			waitpid(client.cgiPid, &status, 0);
-			if (WIFEXITED(status) && status != 0)
+			if (WIFEXITED(status) && status != 0) {
 				client.responseBuffer = ErrorHandler::createResponse(500, client.serverConfig.error_pages);
-			else if (WIFSIGNALED(status))
+				client.statuscode = 500;
+			} else if (WIFSIGNALED(status)) {
 				client.responseBuffer = ErrorHandler::createResponse(504, client.serverConfig.error_pages);
-			
+				client.statuscode = 504;
+			}
 			KqueueManager::removeTimeout(client.cgiPid);
 		}
-		
-	
 		KqueueManager::registerEvent(client.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
-
-
-		// code = isFinished(client)
-		// if (!isFinished(client)) {
-		// 	print_log(RED, "[ERROR] Something went wrong in CGI.");
-		// 	client.responseBuffer = ErrorHandler::createResponse(500);
-		// }
 		return true;
-	}
-	else
-	{
+	} else {
 		print_log(RED, "[ERROR] readFromCgiStdout");
 		KqueueManager::registerEvent(client.cgiOutputFd, EVFILT_READ, EV_DELETE);
 		client.responseBuffer.erase();
 		client.responseBuffer = ErrorHandler::createResponse(500, client.serverConfig.error_pages);
+		client.statuscode = 500;
 		KqueueManager::registerEvent(client.fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 		close(client.cgiOutputFd);
 		client.cgiOutputFd = -1;

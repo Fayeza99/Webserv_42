@@ -38,4 +38,6 @@ public:
 	RequestParser &_request;
 	std::string _filePath;
 	LocationConfig _location;
+
+	int _statuscode;
 };

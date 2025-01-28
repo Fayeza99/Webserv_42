@@ -19,7 +19,6 @@ class KqueueManager {
 		static void initialize();
 		static void registerEvent(int fd, int filter, short flags);
 		static void removeTimeout(int pid);
-
 		static void registerTimer(int pid, int sec);
 		static void deregisterEvent(int fd);
 		static int getKqFd();
