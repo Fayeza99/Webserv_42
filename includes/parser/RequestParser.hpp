@@ -20,6 +20,7 @@ private:
 	void parseRequest(const std::string &request);
 
 public:
+	bool badRequest;
 	bool _isUpload;
 	bool isValidMethod(const std::string &methodStr) const;
 	static std::string trim(const std::string &str);

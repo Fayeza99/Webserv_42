@@ -307,7 +307,13 @@ void Server::handleRead(int clientSocket)
 				// print_log(RED, "Request body too long (413)");
 				clients[clientSocket].responseBuffer = ErrorHandler::createResponse(413);
 				clients[clientSocket].statuscode = 413;
-				clients[clientSocket].draining = true;
+				if (bytesRead < BUFFER_SIZE - 1) {
+					print_log(WHITE, _request->getMethod() + " " + _request->getUri() + " 413");
+					KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_DELETE);
+					KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+					delete _request;
+				} else
+					clients[clientSocket].draining = true;
 				return;
 			}
 			if (CL > 0 && (*_request).getBody().length() < CL) {
@@ -317,6 +323,14 @@ void Server::handleRead(int clientSocket)
 				return;
 			}
 		}
+		if (_request->badRequest) {
+			clients[clientSocket].statuscode = 401;
+			clients[clientSocket].requestBuffer = ErrorHandler::createResponse(401);
+			KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_DELETE);
+			KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
+			delete _request;
+		}
+
 		clients[clientSocket].request = _request;
 		_response = new ResponseControl(clients[clientSocket]);
 		_response->getResponse();
