@@ -283,10 +283,10 @@ void Server::handleRead(int clientSocket)
 	ssize_t bytesRead = recv(clientSocket, buffer, BUFFER_SIZE - 1, 0);
 	if (bytesRead > 0)
 	{
+		// print_log(YELLOW, "read " + std::to_string(bytesRead));
 		buffer[bytesRead] = '\0';
 		clients[clientSocket].lastActive = time(nullptr);
-		// if body > client_max_body_size, drain the socket
-		if (clients[clientSocket].draining) {
+		if (clients[clientSocket].draining) { // if body > client_max_body_size, drain the socket
 			if (bytesRead < BUFFER_SIZE - 1) { // final read
 				clients[clientSocket].draining = false;
 				print_log(WHITE, _request->getMethod() + " " + _request->getUri() + " 413");
@@ -294,10 +294,12 @@ void Server::handleRead(int clientSocket)
 				KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 				delete _request;
 			} else {
+				// print_log(YELLOW, "413, read more (" + std::to_string(bytesRead) + ")");
 				KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
 			}
 			return ;
 		}
+
 		clients[clientSocket].requestBuffer += buffer;
 		_request = new RequestParser(clients[clientSocket].requestBuffer);
 
@@ -306,7 +308,7 @@ void Server::handleRead(int clientSocket)
 		if (isCL != (*_request).getHeaders().end()) {
 			unsigned long CL = stoi(isCL->second);
 			if (clients[clientSocket].serverConfig.client_max_body_size < CL) { // body too long
-				// print_log(RED, "Request body too long (413)");
+				// print_log(YELLOW, "Request body too long (413)");
 				clients[clientSocket].responseBuffer = ErrorHandler::createResponse(413);
 				clients[clientSocket].statuscode = 413;
 				if (bytesRead < BUFFER_SIZE - 1) { // request was smaller than BUFFER_SIZE
@@ -314,16 +316,20 @@ void Server::handleRead(int clientSocket)
 					KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_DELETE);
 					KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 					delete _request;
-				} else
+				} else {
 					clients[clientSocket].draining = true;
+					KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
+				}
 				return;
 			}
-			if (CL > 0 && (*_request).getBody().length() < CL) { // read again until Content-Length
+			if (CL > 0 && _request->getBody().length() < CL) { // read again until Content-Length
+				// print_log(YELLOW, "handleRead again " + std::to_string(CL) + "|" + std::to_string(_request->getBody().length()));
 				delete _request;
 				KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
 				return;
 			}
 		}
+
 		// parsing failed
 		if (_request->badRequest) {
 			clients[clientSocket].statuscode = 400;
