@@ -17,4 +17,5 @@ siege -R siege.siegerc http://127.0.0.1:3000 -b -t 10s
 # curl -X POST http://localhost:8080/bodysize/post_test.py -d '0123456789'		200
 # curl -X POST http://localhost:8080/bodysize/post_test.py -d '01234567890'		413
 
-# curl --resolve example.com:3000:127.0.0.1:3000 http://example.com/
+# bad request
+# curl -X UNKNOWN http://localhost:3000/		400

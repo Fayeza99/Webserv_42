@@ -285,8 +285,9 @@ void Server::handleRead(int clientSocket)
 	{
 		buffer[bytesRead] = '\0';
 		clients[clientSocket].lastActive = time(nullptr);
+		// if body > client_max_body_size, drain the socket
 		if (clients[clientSocket].draining) {
-			if (bytesRead < BUFFER_SIZE - 1) {
+			if (bytesRead < BUFFER_SIZE - 1) { // final read
 				clients[clientSocket].draining = false;
 				print_log(WHITE, _request->getMethod() + " " + _request->getUri() + " 413");
 				KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_DELETE);
@@ -300,14 +301,15 @@ void Server::handleRead(int clientSocket)
 		clients[clientSocket].requestBuffer += buffer;
 		_request = new RequestParser(clients[clientSocket].requestBuffer);
 
+		// checks for body size
 		auto isCL = (*_request).getHeaders().find("Content-Length");
 		if (isCL != (*_request).getHeaders().end()) {
 			unsigned long CL = stoi(isCL->second);
-			if (clients[clientSocket].serverConfig.client_max_body_size < CL) {
+			if (clients[clientSocket].serverConfig.client_max_body_size < CL) { // body too long
 				// print_log(RED, "Request body too long (413)");
 				clients[clientSocket].responseBuffer = ErrorHandler::createResponse(413);
 				clients[clientSocket].statuscode = 413;
-				if (bytesRead < BUFFER_SIZE - 1) {
+				if (bytesRead < BUFFER_SIZE - 1) { // request was smaller than BUFFER_SIZE
 					print_log(WHITE, _request->getMethod() + " " + _request->getUri() + " 413");
 					KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_DELETE);
 					KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
@@ -316,35 +318,37 @@ void Server::handleRead(int clientSocket)
 					clients[clientSocket].draining = true;
 				return;
 			}
-			if (CL > 0 && (*_request).getBody().length() < CL) {
-				// print_log(RED, "Expecting another handleRead (" + std::to_string(CL) + ")");
+			if (CL > 0 && (*_request).getBody().length() < CL) { // read again until Content-Length
 				delete _request;
 				KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR);
 				return;
 			}
 		}
+		// parsing failed
 		if (_request->badRequest) {
-			clients[clientSocket].statuscode = 401;
-			clients[clientSocket].requestBuffer = ErrorHandler::createResponse(401);
+			clients[clientSocket].statuscode = 400;
+			clients[clientSocket].responseBuffer = ErrorHandler::createResponse(400);
+			print_log(WHITE, "Bad Request 400");
 			KqueueManager::registerEvent(clientSocket, EVFILT_READ, EV_DELETE);
 			KqueueManager::registerEvent(clientSocket, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_CLEAR);
 			delete _request;
+			return ;
 		}
-
+		// create Response
 		clients[clientSocket].request = _request;
 		_response = new ResponseControl(clients[clientSocket]);
 		_response->getResponse();
-
+		// show request in the terminal
 		std::stringstream log;
 		log << _request->getMethod() << " " << _request->getUri() << " " << _response->getClient().statuscode;
 		print_log(WHITE, log.str());
-
+		// clean up
 		if (!(*_response).isCgiRequest()) {
 			delete _response;
 			delete _request;
 			clients[clientSocket].request = nullptr;
 		}
-	} else if (bytesRead == 0) {
+	} else if (bytesRead == 0) { // empty message - disconnect
 		// print_log(WHITE, "Client " + std::to_string(clientSocket) + " disconnected");
 		removeClient(clientSocket);
 	} else {
@@ -379,7 +383,6 @@ void Server::handleWrite(int clientSocket)
 		bytesSent = send(clientSocket, response.c_str(), response.size(), 0);
 		clients[clientSocket].requestBuffer.clear();
 		clients[clientSocket].responseBuffer.clear();
-		// print_log(WHITE, "Response sent");
 		if (bytesSent > 0)
 			clients[clientSocket].lastActive = time(nullptr);
 		else if (bytesSent == 0) {

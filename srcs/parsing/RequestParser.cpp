@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <filesystem>
 
-RequestParser::RequestParser(const std::string &request) : _request(request), _isUpload(), badRequest(false)
+RequestParser::RequestParser(const std::string &request) : _request(request), badRequest(false), _isUpload()
 {
 	// print_log(BLUE, "RequestParser Constructor");
 	try
