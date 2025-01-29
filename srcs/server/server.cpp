@@ -466,12 +466,7 @@ void Server::processEvent(struct kevent &event)
 
 		if (event.filter == EVFILT_READ)
 		{
-			bool finished = CgiHandler::readFromCgiStdout(*client);
-			if (finished)
-			{
-				delete _request;
-				delete _response;
-			}
+			CgiHandler::readFromCgiStdout(*client);
 		}
 		else if (event.filter == EVFILT_WRITE)
 		{
