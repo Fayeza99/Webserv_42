@@ -135,6 +135,7 @@ std::string StaticHandler::handleRedir(void) const
 	response << getHttpVersion()
 			 << " 302 Found\r\n"
 			 << "Location: " << _location.redirect_uri << "\r\n"
+			 << "Content-Length: 0\r\n"
 			 << "Connection: close\r\n\r\n";
 	_client.statuscode = 302;
 	return response.str();

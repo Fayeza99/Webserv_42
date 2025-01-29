@@ -438,7 +438,7 @@ void Server::processEvent(struct kevent &event)
 	else if (event.filter == EVFILT_TIMER)
 	{
 		int timePid = static_cast<int>(event.ident);
-		print_log(RED, "Cgi timed out.");
+		// print_log(RED, "Cgi timed out.");
 		kill(timePid, SIGKILL);
 		return;
 	}

@@ -25,11 +25,10 @@ void UploadHandler::getResponse(void)
 		_client.responseBuffer = ErrorHandler::createResponse(404, getErrorPages());
 		_client.statuscode = 404;
 	} else if (writeFiles()) {
-		response << getHttpVersion() << " 201 Created\r\n";
 		if (getErrorPages().find(201) != getErrorPages().end())
 			response << ErrorHandler::createResponse(201, getErrorPages());
 		else
-			response << "Content-Length: 0\r\nConnection: close\r\n\r\n";
+			response << getHttpVersion() << " 201 Created\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
 		_client.responseBuffer = response.str();
 		_client.statuscode = 201;
 	} else {

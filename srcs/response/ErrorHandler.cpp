@@ -1,6 +1,7 @@
 #include "ErrorHandler.hpp"
 
 const std::map<int, std::string> ErrorHandler::defaultErrorMessages = {
+	{201, "Created"},
 	{400, "Bad Request"},
 	{403, "Forbidden"},
 	{404, "Not Found"},
