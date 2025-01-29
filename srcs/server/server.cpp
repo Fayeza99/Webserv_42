@@ -358,7 +358,7 @@ void Server::handleRead(int clientSocket)
 		// print_log(WHITE, "Client " + std::to_string(clientSocket) + " disconnected");
 		removeClient(clientSocket);
 	} else {
-		print_log(RED, "Read error on client " + std::to_string(clientSocket) + ", removing client.");
+		print_log(BLACK, "Read error on client " + std::to_string(clientSocket) + ", removing client.");
 		removeClient(clientSocket);
 	}
 }

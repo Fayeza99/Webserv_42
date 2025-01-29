@@ -4,8 +4,10 @@ brew install siege
 source ./py_env/bin/activate
 pip3 install requests
 
+python -m unittest tests.py -v 
+
 echo "connection = keep-alive" > siege.siegerc
-siege -R siege.siegerc http://127.0.0.1:3000 -b -t 10s 
+siege -R siege.siegerc http://127.0.0.1:3000 -b
 
 # ----------------------------------------------------------------------------
 
@@ -17,9 +19,12 @@ siege -R siege.siegerc http://127.0.0.1:3000 -b -t 10s
 # curl -X DELETE http://localhost:3000/my_files/notfound		404
 
 # test max_body_size (set to 10)
-# curl -X POST http://localhost:8080/bodysize/post_test.py -d '012345678'		200
-# curl -X POST http://localhost:8080/bodysize/post_test.py -d '0123456789'		200
-# curl -X POST http://localhost:8080/bodysize/post_test.py -d '01234567890'		413
+# curl -X POST http://localhost/bodysize/post_test.py -d '012345678'		200
+# curl -X POST http://localhost/bodysize/post_test.py -d '0123456789'		200
+# curl -X POST http://localhost/bodysize/post_test.py -d '01234567890'		413
 
 # bad request
 # curl -X UNKNOWN http://localhost:3000/		400
+
+# curl resolve
+# curl http://www.webserv.com/form.html --resolve www.webserv.com:80:127.0.0.1
